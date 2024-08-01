@@ -10,6 +10,7 @@ COPY poetry.lock .
 RUN poetry config virtualenvs.create false && \
     poetry --no-cache install --without dev --no-root
 
+COPY transcriptomics_data_service transcriptomics_data_service
 COPY entrypoint.bash .
 COPY run.bash .
 COPY LICENSE .

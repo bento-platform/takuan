@@ -1,0 +1,24 @@
+# Standalone docker-compose file for testing
+
+services:
+  tds:
+    build: .
+    depends_on:
+      - tds-db
+    environment:
+      - DATABASE_URI=postgres://reference-db:5432
+      - CORS_ORIGINS="*"
+      - BENTO_AUTHZ_SERVICE_URL=""
+    ports:
+      - "5000:5000"
+
+  tds-db:
+    image: postgres:16
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=tds_user
+      - POSTGRES_PASSWORD=tds_password
+      - POSTGRES_DB=tds_db
+    expose:
+      - 5432

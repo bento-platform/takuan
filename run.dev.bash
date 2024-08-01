@@ -3,7 +3,7 @@
 # Update dependencies and install module locally
 /poetry_user_install_dev.bash
 
-export ASGI_APP="bento_reference_service.main:app"
+export ASGI_APP="transcriptomics_data_service.main:app"
 
 # Set default internal port to 5000
 : "${INTERNAL_PORT:=5000}"
