@@ -11,6 +11,7 @@ __all__ = [
     "ConfigDependency",
 ]
 
+
 class Config(BentoBaseConfig):
     service_id: str = f"{SERVICE_GROUP}:{SERVICE_ARTIFACT}"
     service_name: str = "Transcriptomics Data Service"
@@ -21,6 +22,7 @@ class Config(BentoBaseConfig):
     service_openapi_path: str = "/openapi.json"
 
     database_uri: str = "postgres://localhost:5432"
+
 
 @lru_cache()
 def get_config():
