@@ -5,6 +5,7 @@ __all__ = [
     "GeneExpression",
 ]
 
+
 class ExperimentResult(BaseModel):
     experiment_result_id: str
     assembly_id: str | None = None
