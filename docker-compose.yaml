@@ -6,7 +6,7 @@ services:
     depends_on:
       - tds-db
     environment:
-      - DATABASE_URI=postgres://reference-db:5432
+      - DATABASE_URI=postgres://tds-db:5432
       - CORS_ORIGINS="*"
       - BENTO_AUTHZ_SERVICE_URL=""
     ports:
