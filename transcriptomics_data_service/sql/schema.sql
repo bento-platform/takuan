@@ -13,3 +13,7 @@ CREATE TABLE IF NOT EXISTS gene_expressions (
     tmm_count FLOAT,
     PRIMARY KEY (gene_code, sample_id, experiment_result_id)
 );
+
+CREATE INDEX idx_gene_code ON gene_expressions(gene_code);
+CREATE INDEX idx_sample_id ON gene_expressions(sample_id);
+CREATE INDEX idx_experiment_result_id ON gene_expressions(experiment_result_id);
