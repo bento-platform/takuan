@@ -24,8 +24,16 @@ class Database(PgAsyncDatabase):
         INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
         VALUES ($1, $2, $3, $4, $5, $6)
         """
-        await self.execute(query, expression.gene_code, expression.sample_id, expression.experiment_result_id, expression.raw_count, expression.tpm_count, expression.tmm_count)
-    
+        await self.execute(
+            query,
+            expression.gene_code,
+            expression.sample_id,
+            expression.experiment_result_id,
+            expression.raw_count,
+            expression.tpm_count,
+            expression.tmm_count,
+        )
+
     async def fetch_data(self):
         query = "SELECT * FROM gene_expressions"
         return await self.conn.fetch(query)
@@ -45,5 +53,6 @@ class Database(PgAsyncDatabase):
 @lru_cache()
 def get_db(config: ConfigDependency = Depends(), logger: LoggerDependency = Depends()) -> Database:
     return Database(config, logger)
+
 
 DatabaseDependency = Depends(get_db)
