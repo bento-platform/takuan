@@ -20,6 +20,7 @@ BENTO_SERVICE_INFO = {
 config_for_setup = get_config()
 logger_for_setup = get_logger(config_for_setup)
 
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     db = get_db(config_for_setup, logger_for_setup)
@@ -27,6 +28,7 @@ async def lifespan(_app: FastAPI):
     await db.close()
 
     yield
+
 
 app = BentoFastAPI(
     authz_middleware=None,

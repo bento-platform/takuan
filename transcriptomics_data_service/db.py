@@ -43,7 +43,6 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query)
         return res
 
-
     @asynccontextmanager
     async def transaction(self):
         conn = await self.get_connection()
