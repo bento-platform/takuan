@@ -1,4 +1,6 @@
 import logging
+from typing import Annotated
+import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
 from fastapi import Depends
@@ -34,9 +36,13 @@ class Database(PgAsyncDatabase):
             expression.tmm_count,
         )
 
-    async def fetch_data(self):
+    async def fetch_expressions(self):
+        conn: asyncpg.Connection
         query = "SELECT * FROM gene_expressions"
-        return await self.conn.fetch(query)
+        async with self.connect() as conn:
+            res = await conn.fetch(query)
+        return res
+
 
     @asynccontextmanager
     async def transaction(self):
@@ -51,8 +57,8 @@ class Database(PgAsyncDatabase):
 
 
 @lru_cache()
-def get_db(config: ConfigDependency = Depends(), logger: LoggerDependency = Depends()) -> Database:
+def get_db(config: ConfigDependency, logger: LoggerDependency) -> Database:
     return Database(config, logger)
 
 
-DatabaseDependency = Depends(get_db)
+DatabaseDependency = Annotated[Database, Depends(get_db)]

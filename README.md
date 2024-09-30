@@ -14,6 +14,8 @@ The `--build` argument forces the image to be rebuilt. Be sure to use it if you 
 
 You can now interact with the API by querying `localhost:5000/{endpoint}`
 
+For the OpenAPI browser interface, go to `localhost:5000/docs`.
+
 ## Endpoints
 
 * /service-info

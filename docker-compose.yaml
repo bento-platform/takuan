@@ -7,7 +7,7 @@ services:
     depends_on:
       - tds-db
     environment:
-      - DATABASE_URI=postgres://tds-db:5432
+      - DATABASE_URI=postgres://tds_user:tds_password@tds-db:5432/tds_db
       - CORS_ORIGINS="*"
       - BENTO_AUTHZ_SERVICE_URL=""
     ports:
@@ -24,3 +24,10 @@ services:
       - POSTGRES_DB=tds_db
     expose:
       - 5432
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - 8080:8080
