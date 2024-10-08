@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from transcriptomics_data_service.db import get_db
 from transcriptomics_data_service.routers.expressions import expression_router
-
+from transcriptomics_data_service.routers.ingest import ingest_router
 from . import __version__
 from .config import get_config
 from .constants import BENTO_SERVICE_KIND, SERVICE_TYPE
@@ -41,3 +41,4 @@ app = BentoFastAPI(
 )
 
 app.include_router(expression_router)
+app.include_router(ingest_router)

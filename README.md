@@ -8,7 +8,11 @@ The Transcriptomics Data Service (TDS) is intended to ingest, organize and query
 
 Start the TDS server with a database for testing by running the following command.
 ```bash
-docker compose up --build
+# start
+docker compose up --build -d
+
+# stop
+docker compose down
 ```
 The `--build` argument forces the image to be rebuilt. Be sure to use it if you want code changes to be present.
 
@@ -23,7 +27,11 @@ For local development, you can use the [docker-compose.dev.yaml](./docker-compos
 The server starts in reload mode to quickly reflect local changes, and debugpy is listening on the container's internal port `9511`.
 
 ```bash
+# start
 docker compose -f ./docker-compose.dev.yaml up --build -d
+
+# stop
+docker compose -f ./docker-compose.dev.yaml down
 ```
 
 You can then attach VS Code to the `tds` container, and use the preconfigured `Python Debugger (TDS)` for interactive debugging.
