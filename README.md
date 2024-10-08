@@ -16,6 +16,18 @@ You can now interact with the API by querying `localhost:5000/{endpoint}`
 
 For the OpenAPI browser interface, go to `localhost:5000/docs`.
 
+## Local dev
+
+For local development, you can use the [docker-compose.dev.yaml](./docker-compose.dev.yaml) file to start a TDS 
+[development container](https://code.visualstudio.com/docs/devcontainers/containers) that mounts the local directory.
+The server starts in reload mode to quickly reflect local changes, and debugpy is listening on the container's internal port `9511`.
+
+```bash
+docker compose -f ./docker-compose.dev.yaml up --build -d
+```
+
+You can then attach VS Code to the `tds` container, and use the preconfigured `Python Debugger (TDS)` for interactive debugging.
+
 ## Endpoints
 
 * /service-info
