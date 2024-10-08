@@ -1,8 +1,10 @@
-# Standalone docker-compose file for testing
+# Standalone docker-compose file for local dev
 
 services:
   tds:
-    build: .
+    build:
+      context: .
+      dockerfile: ./dev.Dockerfile
     container_name: tds
     depends_on:
       - tds-db
@@ -10,6 +12,8 @@ services:
       - DATABASE_URI=postgres://tds_user:tds_password@tds-db:5432/tds_db
       - CORS_ORIGINS="*"
       - BENTO_AUTHZ_SERVICE_URL=""
+    volumes:
+      - $PWD:/tds     # mounts local repository
     ports:
       - "5000:5000"
 
@@ -22,3 +26,10 @@ services:
       - POSTGRES_DB=tds_db
     expose:
       - 5432
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - 8080:8080
