@@ -6,7 +6,7 @@ LABEL devcontainer.metadata='[{ \
   "customizations": { \
     "vscode": { \
       "extensions": ["ms-python.python", "eamodio.gitlens"], \
-      "settings": {"workspaceFolder": "/reference"} \
+      "settings": {"workspaceFolder": "/tds"} \
     } \
   } \
 }]'
