@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated
+from typing import Annotated, AsyncIterator
 import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .config import Config, ConfigDependency
 from .logger import LoggerDependency
-from .models import GeneExpression
+from .models import ExperimentResult, GeneExpression
 
 
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
@@ -21,7 +21,61 @@ class Database(PgAsyncDatabase):
         self.logger = logger
         super().__init__(config.database_uri, SCHEMA_PATH)
 
-    async def insert_gene_expression(self, expression: GeneExpression):
+    ##########################
+    # CRUD: experiment_results
+    ##########################
+    async def create_experiment_result(self, exp: ExperimentResult):
+        query = """
+        INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
+        VALUES ($1, $2, $3)
+        """
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            await conn.execute(
+                query,
+                exp.experiment_result_id,
+                exp.assembly_id,
+                exp.assembly_name,
+            )
+        self.logger.info(
+            f"Created experiment_results row: {exp.experiment_result_id} {exp.assembly_name} {exp.assembly_id}"
+        )
+
+    async def read_experiment_result(self, exp_id: str) -> ExperimentResult | None:
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            res = await conn.fetchrow("SELECT * FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+
+        if res is None:
+            return None
+
+        self.logger.debug(f"READ experiment_results ID={exp_id}")
+        return ExperimentResult(
+            experiment_result_id=res["experiment_result_id"],
+            assembly_name=res["assembly_name"],
+            assembly_id=res["assembly_id"],
+        )
+
+    async def update_experiment_result(self, exp: ExperimentResult):
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            await conn.execute(
+                "UPDATE experiment_results SET assembly_id = $2, assembly_name = $3 WHERE experiment_result_id = $1",
+                exp.experiment_result_id,
+                exp.assembly_id,
+                exp.assembly_name,
+            )
+
+    async def delete_experiment_result(self, exp_id: str):
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            await conn.execute("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+        self.logger.info(f"Deleted experiment_result row {exp_id}")
+
+    ########################
+    # CRUD: gene_expressions
+    ########################
+    async def create_gene_expression(self, expression: GeneExpression):
         query = """
         INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -36,12 +90,27 @@ class Database(PgAsyncDatabase):
             expression.tmm_count,
         )
 
-    async def fetch_expressions(self):
+    async def fetch_expressions(self) -> tuple[GeneExpression, ...]:
+        return tuple([r async for r in self._select_expressions(None)])
+
+    async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
-        query = "SELECT * FROM gene_expressions"
+        where_clause = "WHERE experiment_result_id = $1" if exp_id is not None else ""
+        query = f"SELECT * FROM gene_expressions {where_clause}"
         async with self.connect() as conn:
-            res = await conn.fetch(query)
-        return res
+            res = await conn.fetch(query, *((exp_id) if exp_id is not None else ()))
+        for r in map(lambda g: self._deserialize_gene_expression(g), res):
+            yield r
+
+    def _deserialize_gene_expression(self, rec: asyncpg.Record) -> GeneExpression:
+        return GeneExpression(
+            gene_code=rec["gene_code"],
+            sample_id=rec["sample_id"],
+            experiment_result_id=rec["experiment_result_id"],
+            raw_count=rec["raw_count"],
+            tpm_count=rec["tpm_count"],
+            tmm_count=rec["tmm_count"],
+        )
 
     @asynccontextmanager
     async def transaction(self):

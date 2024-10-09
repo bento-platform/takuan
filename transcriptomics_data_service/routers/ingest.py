@@ -4,8 +4,9 @@ import json
 from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
+from transcriptomics_data_service.models import ExperimentResult
 
-__all__ = [""]
+__all__ = ["ingest_router"]
 
 ingest_router = APIRouter()
 
@@ -13,29 +14,34 @@ GENE_ID_KEY = "GeneID"
 
 
 @ingest_router.post(
-    "/ingest/{experiment_result_id}/genome/{genome_id}/ensembl/{ensembl_id}", status_code=status.HTTP_200_OK
+    "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
+    status_code=status.HTTP_200_OK,
 )
 async def ingest(
-    db: DatabaseDependency, experiment_result_id: str, genome_id: str, ensembl_id: str, rcm_file: UploadFile = File(...)
+    db: DatabaseDependency,
+    experiment_result_id: str,
+    assembly_name: str,
+    assembly_id: str,
+    rcm_file: UploadFile = File(...),
 ):
     # Read and process rcm file
     file_bytes = rcm_file.file.read()
     buffer = StringIO(file_bytes.decode("utf-8"))
-
-    # Read each row as a dict
-    # Store rows by gene id
     rcm = {}
     for row in csv.DictReader(buffer):
         print(row)
         rcm[row[GENE_ID_KEY]] = row
-
     # rcm["WASH6P"]  would return something like:
     # {'GeneID': 'WASH6P', '<BIOSAMPLE_ID_1>': '63', '<BIOSAMPLE_ID_2>: '0', ...}
     # TODO read counts as integers
 
-    # TODO perform the ingestion in a transaction
-    # For each matrix: create one row in ExperimentResult
-    # For each cell in the matrix: create one row in GeneExpression
+    # TODO Perform the ingestion in a transaction
+    # TODO For each matrix: create one row in ExperimentResult
+    experiment_result = ExperimentResult(
+        experiment_result_id=experiment_result_id, assembly_name=assembly_name, assembly_id=assembly_id
+    )
+    await db.create_experiment_result(experiment_result)
+    # TODO For each cell in the matrix: create one row in GeneExpression
 
     return
 
