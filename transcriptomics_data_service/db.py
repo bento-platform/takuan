@@ -21,22 +21,24 @@ class Database(PgAsyncDatabase):
         self.logger = logger
         super().__init__(config.database_uri, SCHEMA_PATH)
 
+    async def _execute(self, *args):
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            await conn.execute(*args)
+
     ##########################
     # CRUD: experiment_results
     ##########################
-    async def create_experiment_result(self, exp: ExperimentResult):
+    async def create_experiment_result(self, exp: ExperimentResult, transaction_conn: asyncpg.Connection | None = None):
         query = """
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
         """
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            await conn.execute(
-                query,
-                exp.experiment_result_id,
-                exp.assembly_id,
-                exp.assembly_name,
-            )
+        execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
+        if transaction_conn is not None:
+            await transaction_conn.execute(*execute_args)
+        else:
+            await self._execute(*execute_args)
         self.logger.info(
             f"Created experiment_results row: {exp.experiment_result_id} {exp.assembly_name} {exp.assembly_id}"
         )
@@ -75,12 +77,23 @@ class Database(PgAsyncDatabase):
     ########################
     # CRUD: gene_expressions
     ########################
-    async def create_gene_expression(self, expression: GeneExpression):
+    async def create_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
+        """
+        Creates rows on gene_expression as part of an Atomic transaction
+        Rows on gene_expressions can only be created as part of an RCM ingestion.
+        Ingestion is all-or-nothing, hence the transaction.
+        """
+        async with transaction_conn.transaction():
+            # sub-transaction
+            for gene_expression in expressions:
+                await self._create_gene_expression(gene_expression, transaction_conn)
+
+    async def _create_gene_expression(self, expression: GeneExpression, transaction_conn: asyncpg.Connection):
         query = """
         INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
         VALUES ($1, $2, $3, $4, $5, $6)
         """
-        await self.execute(
+        await transaction_conn.execute(
             query,
             expression.gene_code,
             expression.sample_id,
@@ -113,15 +126,12 @@ class Database(PgAsyncDatabase):
         )
 
     @asynccontextmanager
-    async def transaction(self):
-        conn = await self.get_connection()
-        trx = await conn.transaction()
-        try:
-            yield
-            await trx.commit()
-        except Exception as e:
-            await trx.rollback()
-            raise e
+    async def transaction_connection(self):
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            async with conn.transaction():
+                # operations must be made using this connection for the transaction to apply
+                yield conn
 
 
 @lru_cache()
