@@ -36,8 +36,10 @@ class Database(PgAsyncDatabase):
         """
         execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
         if transaction_conn is not None:
+            # execute within transaction if a transaction_conn is passed
             await transaction_conn.execute(*execute_args)
         else:
+            # auto-commit if not part of a transaction
             await self._execute(*execute_args)
         self.logger.info(
             f"Created experiment_results row: {exp.experiment_result_id} {exp.assembly_name} {exp.assembly_id}"
