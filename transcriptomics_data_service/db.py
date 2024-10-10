@@ -59,19 +59,17 @@ class Database(PgAsyncDatabase):
         )
 
     async def update_experiment_result(self, exp: ExperimentResult):
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            await conn.execute(
+        await self._execute(
+            *(
                 "UPDATE experiment_results SET assembly_id = $2, assembly_name = $3 WHERE experiment_result_id = $1",
                 exp.experiment_result_id,
                 exp.assembly_id,
                 exp.assembly_name,
             )
+        )
 
     async def delete_experiment_result(self, exp_id: str):
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            await conn.execute("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+        await self._execute(*("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id))
         self.logger.info(f"Deleted experiment_result row {exp_id}")
 
     ########################
@@ -89,6 +87,7 @@ class Database(PgAsyncDatabase):
                 await self._create_gene_expression(gene_expression, transaction_conn)
 
     async def _create_gene_expression(self, expression: GeneExpression, transaction_conn: asyncpg.Connection):
+        # Creates a row on gene_expressions within a transaction.
         query = """
         INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
         VALUES ($1, $2, $3, $4, $5, $6)

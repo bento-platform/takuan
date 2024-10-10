@@ -39,11 +39,11 @@ async def ingest(
         experiment_result_id=experiment_result_id, assembly_name=assembly_name, assembly_id=assembly_id
     )
 
-    # Perform the ingestion in a transaction 
+    # Perform the ingestion in a transaction
     async with db.transaction_connection() as transaction_con:
         # For each matrix: create ONE row in ExperimentResult
         await db.create_experiment_result(experiment_result, transaction_con)
-        
+
         # TODO For EACH cell in the matrix: create one row in GeneExpression
         # gene_expressions: list[GeneExpression]
         # await db.create_gene_expressions(gene_expressions, transaction_con)
