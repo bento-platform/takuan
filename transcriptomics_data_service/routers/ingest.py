@@ -4,7 +4,7 @@ import json
 from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
-from transcriptomics_data_service.models import ExperimentResult
+from transcriptomics_data_service.models import ExperimentResult, GeneExpression
 
 __all__ = ["ingest_router"]
 
@@ -35,14 +35,18 @@ async def ingest(
     # {'GeneID': 'WASH6P', '<BIOSAMPLE_ID_1>': '63', '<BIOSAMPLE_ID_2>: '0', ...}
     # TODO read counts as integers
 
-    # TODO Perform the ingestion in a transaction
-    # TODO For each matrix: create one row in ExperimentResult
     experiment_result = ExperimentResult(
         experiment_result_id=experiment_result_id, assembly_name=assembly_name, assembly_id=assembly_id
     )
-    await db.create_experiment_result(experiment_result)
-    # TODO For each cell in the matrix: create one row in GeneExpression
 
+    # Perform the ingestion in a transaction
+    async with db.transaction_connection() as transaction_con:
+        # For each matrix: create ONE row in ExperimentResult
+        await db.create_experiment_result(experiment_result, transaction_con)
+
+        # TODO For EACH cell in the matrix: create one row in GeneExpression
+        # gene_expressions: list[GeneExpression]
+        # await db.create_gene_expressions(gene_expressions, transaction_con)
     return
 
 
