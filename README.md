@@ -36,6 +36,26 @@ docker compose -f ./docker-compose.dev.yaml down
 
 You can then attach VS Code to the `tds` container, and use the preconfigured `Python Debugger (TDS)` for interactive debugging.
 
+## Authorization plugin
+
+Although TDS is part of the Bento platform, it is meant to be reusable in other software stacks.
+Since authorization requirements and technology vary wildy across different projects, 
+TDS allows adopters to write their own authorization logic in python.
+
+For Bento, we rely on API calls to a custom authorization service, 
+see [etc/bento.authz.module.py](./etc/bento.authz.module.py) for an example.
+
+For different authorization requirements, you could choose to write a custom module that performs authorization checks based on:
+* An API key in the request header or in a cookie
+* A JWT bearer token, for example you could:
+  * Allow/Deny simply based on the token's validity (decode + TTL)
+  * Allow/Deny based on the presence of a scope in the token
+  * Allow/Deny based on the presence of a group membership claim
+* The results of API calls to an authorization service
+* Policy engine evaluations, like OPA or Casbin
+
+TODO: add more details as this takes shape
+
 ## Endpoints
 
 * /service-info
