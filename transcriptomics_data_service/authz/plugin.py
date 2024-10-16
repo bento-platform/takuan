@@ -6,7 +6,7 @@ from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddlewa
 from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
 
-__all__ = ["authz_middleware"]
+__all__ = ["authz_plugin"]
 
 
 def import_module_from_path(path):
@@ -22,4 +22,4 @@ AUTHZ_MODULE_PATH = "/tds/lib/authz.module.py"
 authz_plugin_module = import_module_from_path(AUTHZ_MODULE_PATH)
 
 # Get the concrete authz middleware from the provided plugin module
-authz_middleware: BaseAuthzMiddleware = authz_plugin_module.authz_middleware
+authz_plugin: BaseAuthzMiddleware = authz_plugin_module.authz_middleware

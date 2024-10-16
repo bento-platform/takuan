@@ -5,20 +5,20 @@ from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import ExperimentResult, GeneExpression
-from transcriptomics_data_service.authz.plugin import authz_middleware
+from transcriptomics_data_service.authz.plugin import authz_plugin
 
 __all__ = ["ingest_router"]
 
-ingest_router = APIRouter()
+ingest_router = APIRouter(dependencies=authz_plugin.dep_ingest_router())
 
+# TODO make configurable? an argument?
 GENE_ID_KEY = "GeneID"
-
 
 @ingest_router.post(
     "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
-    dependencies=[authz_middleware.dep_authorize_ingest()],
+    dependencies=[authz_plugin.dep_authz_ingest()],
 )
 async def ingest(
     request: Request,
@@ -57,7 +57,7 @@ async def ingest(
 @ingest_router.post(
     "/normalize/{experiment_result_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[authz_middleware.dep_authorize_normalize()],
+    dependencies=[authz_plugin.dep_authz_normalize()],
 )
 async def normalize(
     db: DatabaseDependency,

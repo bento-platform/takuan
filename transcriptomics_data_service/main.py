@@ -6,7 +6,7 @@ from transcriptomics_data_service.db import get_db
 from transcriptomics_data_service.routers.experiment_results import experiment_router
 from transcriptomics_data_service.routers.expressions import expression_router
 from transcriptomics_data_service.routers.ingest import ingest_router
-from transcriptomics_data_service.authz.plugin import authz_middleware
+from transcriptomics_data_service.authz.plugin import authz_plugin
 
 from . import __version__
 from .config import get_config
@@ -32,15 +32,15 @@ async def lifespan(_app: FastAPI):
 
     yield
 
-
 app = BentoFastAPI(
-    authz_middleware=authz_middleware,
+    authz_middleware=authz_plugin,
     config=config_for_setup,
     logger=logger_for_setup,
     bento_extra_service_info=BENTO_SERVICE_INFO,
     service_type=SERVICE_TYPE,
     version=__version__,
     lifespan=lifespan,
+    dependencies=authz_plugin.dep_app()
 )
 
 app.include_router(expression_router)

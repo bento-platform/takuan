@@ -5,6 +5,8 @@ from typing import Awaitable, Callable
 
 class BaseAuthzMiddleware:
 
+    # Middleware lifecycle functions
+
     def attach(self, app: FastAPI):
         """
         Attaches itself to the TDS FastAPI app, all requests will go through the dispatch function.
@@ -28,18 +30,54 @@ class BaseAuthzMiddleware:
         """
         raise NotImplemented()
 
-    def dep_authorize_ingest(self):
-        """
-        Authorization function for the /ingest endpoint.
+    # Dependency injections
 
-        Returns an inner function as a dependency, which is
+    def dep_app(self) -> None | list[Depends]:
         """
+        Specify a dependency to be added on ALL paths of the API.
+        Can be used to protect the application with an API key.
+        """
+        return None
+
+    def dep_ingest_router(self) -> None | list[Depends]:
+        """
+        Specify a dependency to be added to the ingest router.
+        This dependency will apply on all the router's paths.
+        """
+        return None
+
+    def dep_expression_router(self) -> None | list[Depends]:
+        """
+        Specify a dependency to be added to the expression_router.
+        This dependency will apply on all the router's paths.
+        """
+        return None
+
+    def dep_experiment_result_router(self) -> None | list[Depends]:
+        """
+        Specify a dependency to be added to the experiment_router.
+        This dependency will apply on all the router's paths.
+        """
+        return None
+
+    # Endpoint specific dependency creators for authorization logic
+
+    ###### INGEST router paths
+
+    def dep_authz_ingest(self):
         raise NotImplemented()
 
-    def dep_authorize_normalize(self):
-        """
-        Endpoint:   /normalize
+    def dep_authz_normalize(self):
+        raise NotImplemented()
 
-        Authorizes the normalize endpoint
-        """
+    ###### EXPRESSIONS router paths
+
+    def dep_authz_expressions_list(self):
+        raise NotImplemented()
+
+    ###### EXPERIMENT RESULTS router paths
+    def dep_authz_delete_experiment_result(self):
+        raise NotImplemented()
+
+    def dep_authz_get_experiment_result(self):
         raise NotImplemented()
