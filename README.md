@@ -63,8 +63,6 @@ If authorization is enabled and there is no file at `lib/authz.module.py`, an ex
 will not start.
 
 Furthermore, the content of the file must follow some implementation guidelines:
-from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
-
 - You MUST declare a concrete class that extends [BaseAuthzMiddleware](./transcriptomics_data_service/authz/middleware_base.py)
 - In that class, you MUST implement the functions from BaseAuthzMiddleware with the expected signatures:
   - `attach`: used to attach the middleware to the FastAPI app
