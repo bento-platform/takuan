@@ -1,19 +1,16 @@
 from fastapi import Depends, FastAPI, Request, Response, status
 
 from typing import Awaitable, Callable
-from abc import ABC, abstractmethod
 
 
-class BaseAuthzMiddleware(ABC):
+class BaseAuthzMiddleware:
 
-    @abstractmethod
     def attach(self, app: FastAPI):
         """
         Attaches itself to the TDS FastAPI app, all requests will go through the dispatch function.
         """
-        # app.middleware("http")(self.dispatch)
+        raise NotImplemented()
 
-    @abstractmethod
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """
         Defines the way requests are handled by the authorization middleware, if it is attached to the FastAPI app.
@@ -29,22 +26,20 @@ class BaseAuthzMiddleware(ABC):
         -   Raise and catch exception based on authorization results
         -   Handle unauthorized responses
         """
-        pass
+        raise NotImplemented()
 
-    @abstractmethod
     def dep_authorize_ingest(self):
         """
         Authorization function for the /ingest endpoint.
 
         Returns an inner function as a dependency, which is
         """
-        pass
+        raise NotImplemented()
 
-    @abstractmethod
     def dep_authorize_normalize(self):
         """
         Endpoint:   /normalize
 
         Authorizes the normalize endpoint
         """
-        pass
+        raise NotImplemented()

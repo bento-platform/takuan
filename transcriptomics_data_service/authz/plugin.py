@@ -2,7 +2,7 @@ import importlib.util
 
 from fastapi import Request
 
-from transcriptomics_data_service.authz.middleware_mixin import BaseAuthzMiddleware
+from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
 
