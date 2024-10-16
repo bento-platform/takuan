@@ -5,7 +5,7 @@ from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import ExperimentResult, GeneExpression
-from transcriptomics_data_service.authz.plugin import get_request_authorization
+from transcriptomics_data_service.authz.plugin import authz_middleware
 
 __all__ = ["ingest_router"]
 
@@ -17,6 +17,8 @@ GENE_ID_KEY = "GeneID"
 @ingest_router.post(
     "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
     status_code=status.HTTP_200_OK,
+    # Injects the plugin authz middleware dep_authorize_ingest function
+    dependencies=[authz_middleware.dep_authorize_ingest()],
 )
 async def ingest(
     request: Request,
@@ -26,9 +28,6 @@ async def ingest(
     assembly_id: str,
     rcm_file: UploadFile = File(...),
 ):
-    # TODO make injectable
-    authorized = await get_request_authorization(request)
-
     # Read and process rcm file
     file_bytes = rcm_file.file.read()
     buffer = StringIO(file_bytes.decode("utf-8"))
@@ -55,7 +54,11 @@ async def ingest(
     return
 
 
-@ingest_router.post("/normalize/{experiment_result_id}")
+@ingest_router.post(
+    "/normalize/{experiment_result_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[authz_middleware.dep_authorize_normalize()],
+)
 async def normalize(
     db: DatabaseDependency,
     experiment_result_id: str,
