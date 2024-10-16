@@ -65,9 +65,10 @@ will not start.
 Furthermore, the content of the file must follow some implementation guidelines:
 - You MUST declare a concrete class that extends [BaseAuthzMiddleware](./transcriptomics_data_service/authz/middleware_base.py)
 - In that class, you MUST implement the functions from BaseAuthzMiddleware with the expected signatures:
-  - `attach`: used to attach the middleware to the FastAPI app
-  - `dipatch`: called for every request made to the API
-  - `dep_authorize_<endpoint>`: endpoint-specific, authz evaluation functions that should return an injectable function
+  - `attach`: used to attach the middleware to the FastAPI app.
+  - `dipatch`: called for every request made to the API.
+  - `dep_authorize_<endpoint>`: endpoint-specific, authz evaluation functions that should return an injectable function.
+- Finally, the script should expose an instance of your concrete authz middleware, named `authz_middleware`.
 
 Looking at [bento.authz.module.py](./etc/bento.authz.module.py), we can see an implementation that is specific to 
 Bento's authorization service and libraries.
