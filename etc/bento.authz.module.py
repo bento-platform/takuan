@@ -1,11 +1,6 @@
-from logging import Logger
-from re import Pattern
-from typing import Any, Awaitable, Callable, Coroutine
-from fastapi import Depends, FastAPI, Request, Response
 from bento_lib.auth.middleware.fastapi import FastApiAuthMiddleware
 from bento_lib.auth.permissions import P_INGEST_DATA
-from bento_lib.auth.resources import RESOURCE_EVERYTHING, build_resource
-from starlette.middleware.base import BaseHTTPMiddleware
+from bento_lib.auth.resources import RESOURCE_EVERYTHING
 
 from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
@@ -32,5 +27,6 @@ class CustomAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         return self.dep_require_permissions_on_resource(
             permissions=frozenset({P_INGEST_DATA}), resource=RESOURCE_EVERYTHING
         )
+
 
 authz_middleware = CustomAuthzMiddleware.build_from_fastapi_pydantic_config(config, logger)
