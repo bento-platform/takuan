@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI, Request, Response, status
 
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Sequence
 
 
 class BaseAuthzMiddleware:
@@ -32,52 +32,62 @@ class BaseAuthzMiddleware:
 
     # Dependency injections
 
-    def dep_app(self) -> None | list[Depends]:
+    def dep_public_endpoint(self) -> Depends:
+        """
+        Dependency for public endpoints.
+        Used to set the /service-info dependencies.
+        Does nothing by default, override according to your needs.
+        """
+        def _inner():
+            pass
+        return Depends(_inner)
+
+    def dep_app(self) -> None | Sequence[Depends]:
         """
         Specify a dependency to be added on ALL paths of the API.
         Can be used to protect the application with an API key.
         """
         return None
 
-    def dep_ingest_router(self) -> None | list[Depends]:
+    def dep_ingest_router(self) -> None | Sequence[Depends]:
         """
         Specify a dependency to be added to the ingest router.
         This dependency will apply on all the router's paths.
         """
         return None
 
-    def dep_expression_router(self) -> None | list[Depends]:
+    def dep_expression_router(self) -> None | Sequence[Depends]:
         """
         Specify a dependency to be added to the expression_router.
         This dependency will apply on all the router's paths.
         """
         return None
 
-    def dep_experiment_result_router(self) -> None | list[Depends]:
+    def dep_experiment_result_router(self) -> None | Sequence[Depends]:
         """
         Specify a dependency to be added to the experiment_router.
         This dependency will apply on all the router's paths.
         """
         return None
 
-    # Endpoint specific dependency creators for authorization logic
+    ###### Endpoint specific dependency creators for authorization logic
 
     ###### INGEST router paths
 
-    def dep_authz_ingest(self):
+    def dep_authz_ingest(self) -> Depends:
         raise NotImplemented()
 
-    def dep_authz_normalize(self):
+    def dep_authz_normalize(self) -> Depends:
         raise NotImplemented()
 
     ###### EXPRESSIONS router paths
 
-    def dep_authz_expressions_list(self):
+    def dep_authz_expressions_list(self) -> Depends:
         raise NotImplemented()
 
     ###### EXPERIMENT RESULTS router paths
-    def dep_authz_delete_experiment_result(self):
+    def dep_authz_delete_experiment_result(self) -> Depends:
         raise NotImplemented()
 
-    def dep_authz_get_experiment_result(self):
+    def dep_authz_get_experiment_result(self) -> Depends:
         raise NotImplemented()

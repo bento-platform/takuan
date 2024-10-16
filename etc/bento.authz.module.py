@@ -9,28 +9,30 @@ from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddlewa
 config = get_config()
 logger = get_logger(config)
 
+# TODO add Bento specific project/dataset ownership pattern to experiment_result_id
 
-class CustomAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
+class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     """
     Concrete implementation of BaseAuthzMiddleware to authorize with Bento's authorization service/model.
-    Essentialy a TDS wrapper for the bento_lib FastApiAuthMiddleware.
+    Extends the bento-lib FastApiAuthMiddleware, which includes all the middleware lifecycle and authorization logic.
+
+    Notes:
+        - This middleware plugin will only work with a Bento authorization-service.
+        - TDS should be able to perform HTTP requests on the authz service url: `config.bento_authz_service_url`
     """
 
     def _dep_perm_data_everything(self, permission: Permission):
         return self.dep_require_permissions_on_resource(
             permissions=frozenset({permission}),
             resource=RESOURCE_EVERYTHING,
-            require_token=False,
         )
 
     # INGESTION router paths
 
     def dep_authz_ingest(self):
-        # TODO authorize with propper permissions and resources
         return self._dep_perm_data_everything(P_INGEST_DATA)
 
     def dep_authz_normalize(self):
-        # TODO authorize with propper permissions and resources
         return self._dep_perm_data_everything(P_INGEST_DATA)
 
     # EXPERIMENT RESULT router paths
@@ -47,4 +49,4 @@ class CustomAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         return self._dep_perm_data_everything(P_QUERY_DATA)
 
 
-authz_middleware = CustomAuthzMiddleware.build_from_fastapi_pydantic_config(config, logger)
+authz_middleware = BentoAuthzMiddleware.build_from_fastapi_pydantic_config(config, logger)

@@ -14,6 +14,7 @@ logger = get_logger(config)
 # The valid api key for authorization
 API_KEY = "fake-super-secret-api-key"
 
+
 class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
     """
     Concrete implementation of BaseAuthzMiddleware to authorize requests based on the provided API key.
@@ -34,31 +35,40 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
     ) -> Coroutine[Any, Any, Response]:
         if not self.enabled:
             return await call_next(request)
-        
+
         try:
             res = await call_next(request)
         except HTTPException as e:
             # Catch exceptions raised by authz functions
             self.logger.error(e)
-            return JSONResponse(
-                status_code=e.status_code,
-                content=e.detail
-            )
-        
+            return JSONResponse(status_code=e.status_code, content=e.detail)
+
         return res
 
     # API KEY authorization
-    def dep_app(self) -> None | list:
-        # Add an x_api_key Header
+    def dep_app(self):
+        """
+        API-level dependency injection
+        Injects a required header for the API key authz: x_api_key
+        OpenAPI automatically includes it on all paths.
+        """
+
         async def _inner(x_api_key: Annotated[str, Header()]):
             return x_api_key
+
         return [Depends(_inner)]
-    
+
     def _dep_check_api_key(self):
-        # Checks if the API key header contains a valid API key
+        """
+        Dependency injection for the API key authorization.
+        The inner function checks the x_api_key header to validate the API key.
+        Raises an exception that should be caught and handled in the dispatch func.
+        """
+
         async def _inner(x_api_key: Annotated[str, Header()]):
             if x_api_key != API_KEY:
                 raise HTTPException(status_code=403, detail="Unauthorized: invalid API key")
+
         return Depends(_inner)
 
     # Authz logic: only check for valid API key
@@ -68,25 +78,15 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
 
     def dep_authz_normalize(self):
         return self._dep_check_api_key()
-    
+
     def dep_authz_delete_experiment_result(self):
         return self._dep_check_api_key()
-    
+
     def dep_authz_expressions_list(self):
         return self._dep_check_api_key()
-    
+
     def dep_authz_get_experiment_result(self):
         return self._dep_check_api_key()
-
-    # TODO figure these out with the way BentoFastAPI handles authz middleware
-
-    def dep_public_endpoint(self):
-        # forces an API key authz on /service-info
-        return self._dep_check_api_key()
-    
-    @staticmethod
-    def mark_authz_done(request: Request):
-        pass
 
 
 authz_middleware = ApiKeyAuthzMiddleware(config, logger)
