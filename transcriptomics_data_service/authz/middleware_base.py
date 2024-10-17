@@ -35,7 +35,7 @@ class BaseAuthzMiddleware:
     def dep_public_endpoint(self) -> Depends:
         """
         Dependency for public endpoints.
-        Used to set the /service-info dependencies.
+        Used to set the /service-info endpoint's dependencies.
         Does nothing by default, override according to your needs.
         """
         def _inner():
