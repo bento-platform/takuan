@@ -1,15 +1,20 @@
+from typing import Annotated
 from bento_lib.auth.middleware.fastapi import FastApiAuthMiddleware
 from bento_lib.auth.permissions import P_INGEST_DATA, P_DELETE_DATA, P_QUERY_DATA, Permission
-from bento_lib.auth.resources import RESOURCE_EVERYTHING
+from bento_lib.auth.resources import RESOURCE_EVERYTHING, build_resource
+from fastapi import Depends, Request
 
 from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 
+import re
+
 config = get_config()
 logger = get_logger(config)
 
 # TODO add Bento specific project/dataset ownership pattern to experiment_result_id
+
 
 class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     """
@@ -21,6 +26,24 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         - TDS should be able to perform HTTP requests on the authz service url: `config.bento_authz_service_url`
     """
 
+    def _build_resource_from_id(self, experiment_result_id: str):
+        # Inject on an endpoint that uses the experiment_result_id param to create the authz Resource
+        # Ownsership of an experiment is baked-in the ExperimentResult's ID
+        # e.g. "<project-id>--<dataset-id>--<experiment_id>"
+        [project, dataset, experiment] = re.split("--", experiment_result_id)
+        print(project, dataset, experiment)
+        return build_resource(project, dataset)
+
+    def _dep_require_permission(self, permission: Permission):
+        # Given a permission and the injected resource, will evaluate if allowed
+        async def inner(request: Request, resource: Annotated[dict, Depends(self._build_resource_from_id)]):
+            return self.dep_require_permissions_on_resource(
+                permissions=frozenset({permission}),
+                resource=resource,
+            )
+
+        return Depends(inner)
+
     def _dep_perm_data_everything(self, permission: Permission):
         return self.dep_require_permissions_on_resource(
             permissions=frozenset({permission}),
@@ -30,18 +53,19 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     # INGESTION router paths
 
     def dep_authz_ingest(self):
-        return self._dep_perm_data_everything(P_INGEST_DATA)
+        # User needs P_INGEST_DATA permission on the target resource (injected)
+        return self._dep_require_permission(P_INGEST_DATA)
 
     def dep_authz_normalize(self):
-        return self._dep_perm_data_everything(P_INGEST_DATA)
+        return self._dep_require_permission(P_INGEST_DATA)
 
     # EXPERIMENT RESULT router paths
 
     def dep_authz_get_experiment_result(self):
-        return self._dep_perm_data_everything(P_QUERY_DATA)
+        return self._dep_require_permission(P_QUERY_DATA)
 
     def dep_authz_delete_experiment_result(self):
-        return self._dep_perm_data_everything(P_DELETE_DATA)
+        return self._dep_require_permission(P_DELETE_DATA)
 
     # EXPRESSIONS router paths
 
