@@ -13,6 +13,7 @@ import re
 config = get_config()
 logger = get_logger(config)
 
+
 class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     """
     Concrete implementation of BaseAuthzMiddleware to authorize with Bento's authorization service/model.
@@ -24,8 +25,8 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     """
 
     def _build_resource_from_id(self, experiment_result_id: str):
-        # Inject on an endpoint that uses the experiment_result_id param to create the authz Resource
-        # Ownsership of an experiment is baked-in the ExperimentResult's ID
+        # Injectable for endpoints that use the 'experiment_result_id' param to create the authz Resource
+        # Ownsership of an experiment is baked-in the ExperimentResult's ID in Bento
         # e.g. "<project-id>--<dataset-id>--<experiment_id>"
         # TODO: come up with better delimiters
         [project, dataset, experiment] = re.split("--", experiment_result_id)
@@ -35,13 +36,16 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         )
         return build_resource(project, dataset)
 
-    def _dep_require_permission(self, permission: Permission):
-        # Given a permission and the injected resource, will evaluate if allowed
-        async def inner(request: Request, resource: Annotated[dict, Depends(self._build_resource_from_id)]):
-            return self.dep_require_permissions_on_resource(
-                permissions=frozenset({permission}),
-                resource=resource,
-            )
+    def _dep_require_permission_injected_resource(
+        self,
+        permission: Permission,
+    ):
+        # Given a permission and the injected resource, will evaluate if operation is allowed
+        async def inner(
+            request: Request,
+            resource: Annotated[dict, Depends(self._build_resource_from_id)],  # Inject resource
+        ):
+            await self.async_check_authz_evaluate(request, frozenset({permission}), resource, set_authz_flag=True)
 
         return Depends(inner)
 
@@ -55,18 +59,18 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
 
     def dep_authz_ingest(self):
         # User needs P_INGEST_DATA permission on the target resource (injected)
-        return self._dep_require_permission(P_INGEST_DATA)
+        return self._dep_require_permission_injected_resource(P_INGEST_DATA)
 
     def dep_authz_normalize(self):
-        return self._dep_require_permission(P_INGEST_DATA)
+        return self._dep_require_permission_injected_resource(P_INGEST_DATA)
 
     # EXPERIMENT RESULT router paths
 
     def dep_authz_get_experiment_result(self):
-        return self._dep_require_permission(P_QUERY_DATA)
+        return self._dep_require_permission_injected_resource(P_QUERY_DATA)
 
     def dep_authz_delete_experiment_result(self):
-        return self._dep_require_permission(P_DELETE_DATA)
+        return self._dep_require_permission_injected_resource(P_DELETE_DATA)
 
     # EXPRESSIONS router paths
 
