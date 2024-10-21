@@ -17,7 +17,7 @@ from .logger import get_logger
 # could also be used to indicate if deployment is Bento specific of not
 BENTO_SERVICE_INFO = {
     "serviceKind": BENTO_SERVICE_KIND,
-    "dataService": False,   # temp off to quiet bento-web errors
+    "dataService": False,  # temp off to quiet bento-web errors
     "workflowProvider": False,  # temp off to quiet bento-web errors
     "gitRepository": "https://github.com/bento-platform/transcriptomics_data_service",
 }
@@ -34,6 +34,7 @@ async def lifespan(_app: FastAPI):
 
     yield
 
+
 app = BentoFastAPI(
     authz_middleware=authz_plugin,
     config=config_for_setup,
@@ -42,7 +43,7 @@ app = BentoFastAPI(
     service_type=SERVICE_TYPE,
     version=__version__,
     lifespan=lifespan,
-    dependencies=authz_plugin.dep_app()
+    dependencies=authz_plugin.dep_app(),
 )
 
 app.include_router(expression_router)

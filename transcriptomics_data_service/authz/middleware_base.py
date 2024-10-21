@@ -38,8 +38,10 @@ class BaseAuthzMiddleware:
         Used to set the /service-info endpoint's dependencies.
         Does nothing by default, override according to your needs.
         """
+
         def _inner():
             pass
+
         return Depends(_inner)
 
     def dep_app(self) -> None | Sequence[Depends]:
