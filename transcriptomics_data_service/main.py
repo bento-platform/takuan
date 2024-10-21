@@ -13,10 +13,12 @@ from .config import get_config
 from .constants import BENTO_SERVICE_KIND, SERVICE_TYPE
 from .logger import get_logger
 
+# TODO should probably be mounted as a JSON for usage outside Bento
+# could also be used to indicate if deployment is Bento specific of not
 BENTO_SERVICE_INFO = {
     "serviceKind": BENTO_SERVICE_KIND,
-    "dataService": True,
-    "workflowProvider": True,
+    "dataService": False,   # temp off to quiet bento-web errors
+    "workflowProvider": False,  # temp off to quiet bento-web errors
     "gitRepository": "https://github.com/bento-platform/transcriptomics_data_service",
 }
 
