@@ -13,9 +13,6 @@ import re
 config = get_config()
 logger = get_logger(config)
 
-# TODO add Bento specific project/dataset ownership pattern to experiment_result_id
-
-
 class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
     """
     Concrete implementation of BaseAuthzMiddleware to authorize with Bento's authorization service/model.
@@ -30,8 +27,12 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         # Inject on an endpoint that uses the experiment_result_id param to create the authz Resource
         # Ownsership of an experiment is baked-in the ExperimentResult's ID
         # e.g. "<project-id>--<dataset-id>--<experiment_id>"
+        # TODO: come up with better delimiters
         [project, dataset, experiment] = re.split("--", experiment_result_id)
         print(project, dataset, experiment)
+        self._logger.debug(
+            f"Injecting resource: project={project} dataset={dataset} experiment_result_id={experiment_result_id}"
+        )
         return build_resource(project, dataset)
 
     def _dep_require_permission(self, permission: Permission):
