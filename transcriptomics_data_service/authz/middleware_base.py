@@ -29,6 +29,9 @@ class BaseAuthzMiddleware:
         -   Handle unauthorized responses
         """
         raise NotImplemented()
+    
+    async def mark_authz_done(self, request: Request):
+        pass
 
     # Dependency injections
 

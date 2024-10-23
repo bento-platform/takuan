@@ -11,8 +11,16 @@ from transcriptomics_data_service.logger import get_logger
 config = get_config()
 logger = get_logger(config)
 
-# The valid api key for authorization
+
+"""
+CUSTOM PLUGIN CONFIGURATION
+Extra configurations can be added to the config object by adding
+a '.env' file in the plugin mount directory.
+Variables placed there will be loaded as lowercase properties
+
+This variable's value can be accessed with: config.api_key
 API_KEY = "fake-super-secret-api-key"
+"""
 
 
 class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
@@ -24,6 +32,12 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         super().__init__()
         self.enabled = config.bento_authz_enabled
         self.logger = logger
+
+        # Load the api_key from the config's extras
+        self.api_key = config.model_extra.get("api_key")
+        if self.api_key is None:
+            # prevents the server from starting if misconfigured
+            raise ValueError("Expected variable 'API_KEY' is not set in the plugin's .env")
 
     # Middleware lifecycle
 
@@ -66,7 +80,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         """
 
         async def _inner(x_api_key: Annotated[str, Header()]):
-            if x_api_key != API_KEY:
+            if x_api_key != self.api_key:
                 raise HTTPException(status_code=403, detail="Unauthorized: invalid API key")
 
         return Depends(_inner)

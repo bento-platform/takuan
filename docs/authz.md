@@ -59,3 +59,27 @@ services:
   tds-db:
     # ... Omitted for simplicity
 ```
+
+## Providing extra configurations for a custom authorization plugin
+
+You can add custom settings for your authorization plugin.
+Following the API key authorization plugin [example](../etc/example.authz.module.py), 
+you will notice that the API key is not hard coded in a variable, but imported from the pydantic config.
+
+The TDS pydantic settings are configured to load a `.env` file from the authz plugin mount.
+After the .env is loaded, you can access the extra settings with: `config.model_extra.get(<lowercase .env var name>)`.
+
+In other scenarios, you could store any configuration values required for your authorization logic.
+
+## Defining additional python dependencies
+
+When implementing an authorization plugin, you may realize that the default python modules used in TDS are not enough
+for your needs.
+
+Maybe you want to use OPA's Python client to evaluate policies, or an in-house Python library your team made for this
+purpose.
+
+While the dependencies declared in [pyproject.toml](../pyproject.toml) are fixed for a given TDS release,
+you can still speficy extra dependencies to be installed when the container starts!
+
+TODO: figure out how to do this
