@@ -3,6 +3,11 @@
 # Update dependencies and install module locally
 /poetry_user_install_dev.bash
 
+if ! [ -f /tds/lib/requirements.txt ]; then
+  echo "Installing authz plugin dependencies"
+  pip3 install -r /tds/lib/requirements.txt
+fi
+
 export ASGI_APP="transcriptomics_data_service.main:app"
 
 # Set default internal port to 5000
