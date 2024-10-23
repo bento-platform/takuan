@@ -5,9 +5,9 @@ export ASGI_APP="transcriptomics_data_service.main:app"
 # Set default internal port to 5000
 : "${INTERNAL_PORT:=5000}"
 
+# Extra dependencies installation for authz plugin
 if ! [ -f /tds/lib/requirements.txt ]; then
-  echo "Installing authz plugin dependencies"
-  pip3 install -r /tds/lib/requirements.txt
+  pip install -r /tds/lib/requirements.txt
 fi
 
 uvicorn \

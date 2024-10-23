@@ -82,4 +82,9 @@ purpose.
 While the dependencies declared in [pyproject.toml](../pyproject.toml) are fixed for a given TDS release,
 you can still speficy extra dependencies to be installed when the container starts!
 
-TODO: figure out how to do this
+To do so, add a `requirements.txt` file to the authz plugin mount.
+During the initialization of the container, these additional dependencies will be installed,
+allowing your plugin to use them.
+
+**Note: It is the plugin implementer's responsibility to ensure that these additional dependencies
+don't conflict with those in [pyproject.toml](../pyproject.toml)**
