@@ -167,6 +167,3 @@ cython_debug/
 
 # tds-db
 pg_data
-
-# TDS custom authz module
-lib/*

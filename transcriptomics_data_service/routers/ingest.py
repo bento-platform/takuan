@@ -1,11 +1,10 @@
-from fastapi import APIRouter, File, Request, UploadFile, status
+from fastapi import APIRouter, File, UploadFile, status
 import csv
 import json
 from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import ExperimentResult, GeneExpression
-from transcriptomics_data_service.authz.plugin import get_request_authorization
 
 __all__ = ["ingest_router"]
 
@@ -19,22 +18,18 @@ GENE_ID_KEY = "GeneID"
     status_code=status.HTTP_200_OK,
 )
 async def ingest(
-    request: Request,
     db: DatabaseDependency,
     experiment_result_id: str,
     assembly_name: str,
     assembly_id: str,
     rcm_file: UploadFile = File(...),
 ):
-    # TODO make injectable
-    authorized = await get_request_authorization(request)
-
     # Read and process rcm file
     file_bytes = rcm_file.file.read()
     buffer = StringIO(file_bytes.decode("utf-8"))
     rcm = {}
     for row in csv.DictReader(buffer):
-        # print(row)
+        print(row)
         rcm[row[GENE_ID_KEY]] = row
     # rcm["WASH6P"]  would return something like:
     # {'GeneID': 'WASH6P', '<BIOSAMPLE_ID_1>': '63', '<BIOSAMPLE_ID_2>: '0', ...}
