@@ -43,11 +43,12 @@ async def ingest(
                     gene_code=gene_code,
                     sample_id=sample_id,
                     experiment_result_id=experiment_result_id,
-                    raw_count=raw_count
+                    raw_count=raw_count,
                 )
                 gene_expressions.append(gene_expression)
         await db.create_gene_expressions(gene_expressions, transaction_con)
     return
+
 
 def _load_csv(file_bytes: bytes) -> pd.DataFrame:
     buffer = StringIO(file_bytes.decode("utf-8"))
@@ -58,13 +59,11 @@ def _load_csv(file_bytes: bytes) -> pd.DataFrame:
         # Check for duplicate values in index column or header
         if df.index.duplicated().any():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Duplicate values found in the Gene ID column."
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate values found in the Gene ID column."
             )
         if df.columns.duplicated().any():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Duplicate values found in the Sample ID row."
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate values found in the Sample ID row."
             )
 
         try:
