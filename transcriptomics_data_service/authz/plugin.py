@@ -16,8 +16,6 @@ def import_module_from_path(path):
     return module
 
 
-# TODO find a way to allow plugin writers to specify additional dependencies to be installed
-
 AUTHZ_MODULE_PATH = "/tds/lib/authz.module.py"
 authz_plugin_module = import_module_from_path(AUTHZ_MODULE_PATH)
 

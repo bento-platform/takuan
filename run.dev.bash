@@ -4,7 +4,7 @@
 /poetry_user_install_dev.bash
 
 # Extra dependencies installation for authz plugin
-if ! [ -f /tds/lib/requirements.txt ]; then
+if [ -f /tds/lib/requirements.txt ]; then
   pip install -r /tds/lib/requirements.txt
 fi
 

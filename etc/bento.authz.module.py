@@ -59,23 +59,23 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
 
     def dep_authz_ingest(self):
         # User needs P_INGEST_DATA permission on the target resource (injected)
-        return self._dep_require_permission_injected_resource(P_INGEST_DATA)
+        return [self._dep_require_permission_injected_resource(P_INGEST_DATA)]
 
     def dep_authz_normalize(self):
-        return self._dep_require_permission_injected_resource(P_INGEST_DATA)
+        return [self._dep_require_permission_injected_resource(P_INGEST_DATA)]
 
     # EXPERIMENT RESULT router paths
 
     def dep_authz_get_experiment_result(self):
-        return self._dep_require_permission_injected_resource(P_QUERY_DATA)
+        return [self._dep_require_permission_injected_resource(P_QUERY_DATA)]
 
     def dep_authz_delete_experiment_result(self):
-        return self._dep_require_permission_injected_resource(P_DELETE_DATA)
+        return [self._dep_require_permission_injected_resource(P_DELETE_DATA)]
 
     # EXPRESSIONS router paths
 
     def dep_authz_expressions_list(self):
-        return self._dep_perm_data_everything(P_QUERY_DATA)
+        return [self._dep_perm_data_everything(P_QUERY_DATA)]
 
 
 authz_middleware = BentoAuthzMiddleware.build_from_fastapi_pydantic_config(config, logger)

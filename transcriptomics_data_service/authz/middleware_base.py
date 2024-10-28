@@ -30,7 +30,7 @@ class BaseAuthzMiddleware:
         """
         raise NotImplemented()
 
-    async def mark_authz_done(self, request: Request):
+    def mark_authz_done(self, request: Request):
         pass
 
     # Dependency injections
@@ -79,20 +79,20 @@ class BaseAuthzMiddleware:
 
     ###### INGEST router paths
 
-    def dep_authz_ingest(self) -> Depends:
-        raise NotImplemented()
+    def dep_authz_ingest(self) -> None | Sequence[Depends]:
+        return None
 
-    def dep_authz_normalize(self) -> Depends:
-        raise NotImplemented()
+    def dep_authz_normalize(self) -> None | Sequence[Depends]:
+        return None
 
     ###### EXPRESSIONS router paths
 
-    def dep_authz_expressions_list(self) -> Depends:
-        raise NotImplemented()
+    def dep_authz_expressions_list(self) -> None | Sequence[Depends]:
+        return None
 
     ###### EXPERIMENT RESULTS router paths
-    def dep_authz_delete_experiment_result(self) -> Depends:
-        raise NotImplemented()
+    def dep_authz_delete_experiment_result(self) -> None | Sequence[Depends]:
+        return None
 
-    def dep_authz_get_experiment_result(self) -> Depends:
-        raise NotImplemented()
+    def dep_authz_get_experiment_result(self) -> None | Sequence[Depends]:
+        return None

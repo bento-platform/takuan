@@ -19,7 +19,7 @@ GENE_ID_KEY = "GeneID"
     "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
-    dependencies=[authz_plugin.dep_authz_ingest()],
+    dependencies=authz_plugin.dep_authz_ingest(),
 )
 async def ingest(
     request: Request,
@@ -58,7 +58,7 @@ async def ingest(
 @ingest_router.post(
     "/normalize/{experiment_result_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[authz_plugin.dep_authz_normalize()],
+    dependencies=authz_plugin.dep_authz_normalize(),
 )
 async def normalize(
     db: DatabaseDependency,

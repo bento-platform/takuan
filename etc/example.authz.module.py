@@ -1,8 +1,7 @@
 from logging import Logger
-from typing import Annotated, Any, Awaitable, Callable, Coroutine
+from typing import Annotated, Any, Awaitable, Callable, Coroutine, Sequence
 from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response
 from fastapi.responses import JSONResponse
-from starlette.responses import Response
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 from transcriptomics_data_service.config import Config, get_config
@@ -19,7 +18,7 @@ a '.env' file in the plugin mount directory.
 Variables placed there will be loaded as lowercase properties
 
 This variable's value can be accessed with: config.api_key
-API_KEY = "fake-super-secret-api-key"
+API_KEY="fake-super-secret-api-key"
 """
 
 
@@ -60,17 +59,6 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         return res
 
     # API KEY authorization
-    def dep_app(self):
-        """
-        API-level dependency injection
-        Injects a required header for the API key authz: x_api_key
-        OpenAPI automatically includes it on all paths.
-        """
-
-        async def _inner(x_api_key: Annotated[str, Header()]):
-            return x_api_key
-
-        return [Depends(_inner)]
 
     def _dep_check_api_key(self):
         """
@@ -85,22 +73,20 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
 
         return Depends(_inner)
 
-    # Authz logic: only check for valid API key
+    def dep_ingest_router(self) -> Sequence[Depends]:
+        # Require API key check on the ingest router
+        return [self._dep_check_api_key()]
 
-    def dep_authz_ingest(self):
-        return self._dep_check_api_key()
+    def dep_expression_router(self) -> Sequence[Depends]:
+        # Require API key check on the expressions router
+        return [self._dep_check_api_key()]
 
-    def dep_authz_normalize(self):
-        return self._dep_check_api_key()
+    def dep_experiment_result_router(self) -> Sequence[Depends]:
+        # Require API key check on the experiment_result router
+        return [self._dep_check_api_key()]
 
-    def dep_authz_delete_experiment_result(self):
-        return self._dep_check_api_key()
-
-    def dep_authz_expressions_list(self):
-        return self._dep_check_api_key()
-
-    def dep_authz_get_experiment_result(self):
-        return self._dep_check_api_key()
+    # NOTE: With an all-or-nothing authz mechanism like an API key,
+    # we can place the authz checks at the router level to have a more concise module.
 
 
 authz_middleware = ApiKeyAuthzMiddleware(config, logger)
