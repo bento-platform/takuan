@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Request, UploadFile, status
+from fastapi import APIRouter, File, UploadFile, status
 import csv
 import json
 from io import StringIO
@@ -22,7 +22,6 @@ GENE_ID_KEY = "GeneID"
     dependencies=authz_plugin.dep_authz_ingest(),
 )
 async def ingest(
-    request: Request,
     db: DatabaseDependency,
     experiment_result_id: str,
     assembly_name: str,
@@ -34,7 +33,7 @@ async def ingest(
     buffer = StringIO(file_bytes.decode("utf-8"))
     rcm = {}
     for row in csv.DictReader(buffer):
-        # print(row)
+        print(row)
         rcm[row[GENE_ID_KEY]] = row
     # rcm["WASH6P"]  would return something like:
     # {'GeneID': 'WASH6P', '<BIOSAMPLE_ID_1>': '63', '<BIOSAMPLE_ID_2>: '0', ...}
