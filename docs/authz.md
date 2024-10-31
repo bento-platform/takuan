@@ -29,7 +29,6 @@ Furthermore, the content of the file must follow some implementation guidelines:
 - In that class, you MUST implement the functions from BaseAuthzMiddleware with the expected signatures:
   - `attach`: used to attach the middleware to the FastAPI app.
   - `dipatch`: called for every request made to the API.
-  - `dep_authorize_<endpoint>`: endpoint-specific, authz evaluation functions that should return an injectable function.
 - Finally, the script should expose an instance of your concrete authz middleware, named `authz_middleware`.
 
 Looking at [bento.authz.module.py](./etc/bento.authz.module.py), we can see an implementation that is specific to 
@@ -40,6 +39,28 @@ Rather than directly implementing the `attach`, `dispatch` and other authorizati
 
 The only thing left to do is to implement the endpoint-specific authorization functions.
 
+Here is a full view of the methods you can implement and their purpose.
+| Lifecycle methods | Mandatory | Description                                                                                 |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `attach`          | YES       | Attaches the middleware to the FastAPI app                                                  |
+| `dispatch`        | YES       | Middleware dispatch executed for all requests. Handle  authorization errors/exceptions here |
+| `mark_authz_done` | NO        | Bento lib authz middleware specific, marks that the authz check on a request was performed  |
+
+| App/router authorization methods | Description                                                          |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `dep_app`                        | Returns a list of injectables that will be added as app dependencies |
+| `dep_ingest_router`              | Returns a list of injectables for the ingest router                  |
+| `dep_expression_router`          | Returns a list of injectables for the expression router              |
+| `dep_experiment_result_router`   | Returns a list of injectables for the expression router              |
+
+| Endpoint authorization methods       | Description                                               |
+| ------------------------------------ | --------------------------------------------------------- |
+| `dep_public_endpoint`                | Returns an injectable authz function for public endpoints |
+| `dep_authz_ingest`                   | TODO                                                      |
+| `dep_authz_normalize`                | TODO                                                      |
+| `dep_authz_expressions_list`         | TODO                                                      |
+| `dep_authz_delete_experiment_result` | TODO                                                      |
+| `dep_authz_get_experiment_result`    | TODO                                                      |
 ## Using an authorization plugin
 
 When using the production image, the authz plugin must be mounted correclty on the container.
