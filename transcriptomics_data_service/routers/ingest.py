@@ -63,14 +63,10 @@ def _load_csv(file_bytes: bytes) -> pd.DataFrame:
         if df.columns.duplicated().any():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate Sample IDs detected.")
 
-        # Ensuring raw count values are integers, otherwise flagging an error
-        try:
-            df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
-        except ValueError as e:
-            # HTTPException is terminal, it cannot get caught by any other try/catch block
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid non-integer value found: {e}")
-
+        # Ensuring raw count values are integers
+        df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
         return df
+
     except pd.errors.ParserError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
