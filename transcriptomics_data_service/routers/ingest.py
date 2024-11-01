@@ -24,30 +24,31 @@ async def ingest(
     assembly_id: str,
     rcm_file: UploadFile = File(...),
 ):
-    # Read and process rcm file
+    # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
     rcm_df = _load_csv(file_bytes)
-    # Perform the ingestion in a transaction
+
+    # Handling ingestion as a transactional operation
     async with db.transaction_connection() as transaction_con:
-        # For each matrix: create ONE row in ExperimentResult
         experiment_result = ExperimentResult(
             experiment_result_id=experiment_result_id, assembly_name=assembly_name, assembly_id=assembly_id
         )
         await db.create_experiment_result(experiment_result, transaction_con)
 
-        gene_expressions: list[GeneExpression] = []
-        for gene_code, row in rcm_df.iterrows():
+        gene_expressions: list[GeneExpression] = [
+            GeneExpression(
+                gene_code=gene_code,
+                sample_id=sample_id,
+                experiment_result_id=experiment_result_id,
+                raw_count=raw_count,
+            )
+            for gene_code, row in rcm_df.iterrows()
+            for sample_id, raw_count in row.items()
+        ]
 
-            for sample_id, raw_count in row.items():
-                gene_expression = GeneExpression(
-                    gene_code=gene_code,
-                    sample_id=sample_id,
-                    experiment_result_id=experiment_result_id,
-                    raw_count=raw_count,
-                )
-                gene_expressions.append(gene_expression)
         await db.create_gene_expressions(gene_expressions, transaction_con)
-    return
+
+    return {"message": "Ingestion completed successfully"}
 
 
 def _load_csv(file_bytes: bytes) -> pd.DataFrame:
@@ -56,39 +57,26 @@ def _load_csv(file_bytes: bytes) -> pd.DataFrame:
     try:
         df = pd.read_csv(buffer, index_col=0, header=0)
 
-        # Check for duplicate values in index column or header
+        # Validating for unique Gene and Sample IDs
         if df.index.duplicated().any():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate values found in the Gene ID column."
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate Gene IDs detected.")
         if df.columns.duplicated().any():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate values found in the Sample ID row."
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate Sample IDs detected.")
 
+        # Ensuring raw count values are integers, otherwise flagging an error
         try:
-            df = df.applymap(lambda x: int(x) if pd.notna(x) else x)
+            df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
         except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Data type error: Non-integer value found: {e}",
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid non-integer value found: {e}")
 
         return df
     except pd.errors.ParserError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"CSV parsing error: {e}",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Data type error in CSV: {e}",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Value error in CSV data: {e}")
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error while reading CSV: {e}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error while reading CSV: {e}"
         )
 
 
