@@ -67,6 +67,7 @@ def _load_csv(file_bytes: bytes) -> pd.DataFrame:
         try:
             df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
         except ValueError as e:
+            # HTTPException is terminal, it cannot get caught by any other try/catch block
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid non-integer value found: {e}")
 
         return df
