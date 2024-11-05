@@ -71,10 +71,6 @@ def _load_csv(file_bytes: bytes) -> pd.DataFrame:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Value error in CSV data: {e}")
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error while reading CSV: {e}"
-        )
 
 
 @ingest_router.post("/normalize/{experiment_result_id}")
