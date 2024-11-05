@@ -1,6 +1,6 @@
 from logging import Logger
 from typing import Annotated, Any, Awaitable, Callable, Coroutine, Sequence
-from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
@@ -49,6 +49,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         if not self.enabled:
             return await call_next(request)
 
+        # Request was not checked for authz yet
         try:
             res = await call_next(request)
         except HTTPException as e:
@@ -57,7 +58,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
             return JSONResponse(status_code=e.status_code, content=e.detail)
 
         return res
-
+    
     # API KEY authorization
 
     def _dep_check_api_key(self):

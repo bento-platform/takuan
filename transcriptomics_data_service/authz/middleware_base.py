@@ -11,7 +11,7 @@ class BaseAuthzMiddleware:
         """
         Attaches itself to the TDS FastAPI app, all requests will go through the dispatch function.
         """
-        raise NotImplemented()
+        app.middleware("http")(self.dispatch)
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """
@@ -31,6 +31,11 @@ class BaseAuthzMiddleware:
         raise NotImplemented()
 
     def mark_authz_done(self, request: Request):
+        """
+        Implement and use in authz check function to mark that the given request has been checked.
+        Used by the Bento specific authz middleware to return 403 by default.
+        Ignore if you plan on simply raising exceptions in the authz check methods (recommended).
+        """
         pass
 
     # Dependency injections
@@ -49,28 +54,27 @@ class BaseAuthzMiddleware:
 
     def dep_app(self) -> None | Sequence[Depends]:
         """
-        Specify a dependency to be added on ALL paths of the API.
-        Can be used to protect the application with an API key.
+        Specify dependencies to be added on ALL paths of the API.
         """
         return None
 
     def dep_ingest_router(self) -> None | Sequence[Depends]:
         """
-        Specify a dependency to be added to the ingest router.
+        Specify dependencies to be added to the ingest router.
         This dependency will apply on all the router's paths.
         """
         return None
 
     def dep_expression_router(self) -> None | Sequence[Depends]:
         """
-        Specify a dependency to be added to the expression_router.
+        Specify dependencies to be added to the expression_router.
         This dependency will apply on all the router's paths.
         """
         return None
 
     def dep_experiment_result_router(self) -> None | Sequence[Depends]:
         """
-        Specify a dependency to be added to the experiment_router.
+        Specify dependencies to be added to the experiment_router.
         This dependency will apply on all the router's paths.
         """
         return None

@@ -1,6 +1,7 @@
 # Authorization plugin
 
 Although TDS is part of the Bento platform, it is meant to be reusable in other software stacks.
+
 Since authorization requirements and technology vary wildy across different projects, 
 TDS allows adopters to write their own authorization logic in python.
 
@@ -16,6 +17,8 @@ For different authorization requirements, you could choose to write a custom mod
 * The results of API calls to an authorization service
 * Policy engine evaluations, like OPA or Casbin
 
+TODO: add diagram showing how the plugin fits in with the app
+
 ## Implementing an authorization plugin
 
 When starting the TDS container, the FastAPI server will attempt to dynamicaly load the authorization plugin 
@@ -26,9 +29,7 @@ will not start.
 
 Furthermore, the content of the file must follow some implementation guidelines:
 - You MUST declare a concrete class that extends [BaseAuthzMiddleware](./transcriptomics_data_service/authz/middleware_base.py)
-- In that class, you MUST implement the functions from BaseAuthzMiddleware with the expected signatures:
-  - `attach`: used to attach the middleware to the FastAPI app.
-  - `dipatch`: called for every request made to the API.
+- In that class, you MUST implement the required functions from `BaseAuthzMiddleware`:
 - Finally, the script should expose an instance of your concrete authz middleware, named `authz_middleware`.
 
 Looking at [bento.authz.module.py](./etc/bento.authz.module.py), we can see an implementation that is specific to 
@@ -37,30 +38,76 @@ Bento's authorization service and libraries.
 Rather than directly implementing the `attach`, `dispatch` and other authorization logic, we rely on the `bento-lib` 
 `FastApiAuthMiddleware`, which already provides a reusable authorization middleware for FastAPI.
 
-The only thing left to do is to implement the endpoint-specific authorization functions.
+The only thing left to do is to implement the authorization check functions.
 
-Here is a full view of the methods you can implement and their purpose.
-| Lifecycle methods | Mandatory | Description                                                                                 |
-| ----------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `attach`          | YES       | Attaches the middleware to the FastAPI app                                                  |
-| `dispatch`        | YES       | Middleware dispatch executed for all requests. Handle  authorization errors/exceptions here |
-| `mark_authz_done` | NO        | Bento lib authz middleware specific, marks that the authz check on a request was performed  |
+The next sections cover the specific methods that can be implemented to perform authorization.
 
-| App/router authorization methods | Description                                                          |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `dep_app`                        | Returns a list of injectables that will be added as app dependencies |
-| `dep_ingest_router`              | Returns a list of injectables for the ingest router                  |
-| `dep_expression_router`          | Returns a list of injectables for the expression router              |
-| `dep_experiment_result_router`   | Returns a list of injectables for the expression router              |
+### Dependency injection
 
-| Endpoint authorization methods       | Description                                               |
-| ------------------------------------ | --------------------------------------------------------- |
-| `dep_public_endpoint`                | Returns an injectable authz function for public endpoints |
-| `dep_authz_ingest`                   | TODO                                                      |
-| `dep_authz_normalize`                | TODO                                                      |
-| `dep_authz_expressions_list`         | TODO                                                      |
-| `dep_authz_delete_experiment_result` | TODO                                                      |
-| `dep_authz_get_experiment_result`    | TODO                                                      |
+The authorization middleware plugin leverages [FastAPI's dependency injection mechanisms](https://fastapi.tiangolo.com/tutorial/dependencies/).
+
+This simple yet powerful pattern allows us to integrate custom parametrized authorization checks at different levels of the application.
+
+In FastAPI, dependencies can be injected at different levels:
+- App
+  - Affect ALL requests
+- Routers
+  - Only affect the router's requests
+- Endpoints
+  - Only affect the endpoint's requests
+
+The wiring of the dependency injection system is already in place, 
+adopters only need to implement the authorization checks as injectable dependencies in their implementation of `BaseAuthMiddleware`.
+
+### Lifecycle methods
+
+These methods determine the authz middleware's lifecycle behaviour. That is to say, how it attaches to the FastAPI app and how it handles
+the incoming requests.
+
+| Lifecycle methods | Requires Implementation | Description                                                                                 |
+| ----------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `dispatch`        | YES                     | Middleware dispatch executed for all requests. Handle  authorization errors/exceptions here |
+| `attach`          | NO                      | Attaches the middleware to the FastAPI app                                                  |
+| `mark_authz_done` | NO                      | Marks that the authz check on a request was performed for later handling in `dispatch`.     |
+
+The `dispatch` function is the most important among them, since it is responsible for handling the authorization exceptions raised by the
+authorization functions. A poor implementation could lead to broken access-control.
+
+While `attach` and `mark_authz_done` already have a default implementation, they can be overriden if needed.
+
+### App and router dependency methods
+
+These methods define dependencies that will be injected in the FastAPI app itself, or its routers, above the endpoints layer.
+Authorization checks can be performed at this level rather than at the endpoints level.
+
+This is useful for all-or-nothing authorization logic, such as API key authorization, 
+where the API key should be present in all requests.
+
+If you are performing authz checks using these methods, make sure to raise an exception on unauthorized requests.
+
+| App/router dependency methods  | Description                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `dep_app`                      | Returns a list of injectables that will be added as app dependencies, covering ALL paths         |
+| `dep_ingest_router`            | Returns a list of injectables for the ingest router, covers `/ingest` and `/normalize` endpoints |
+| `dep_expression_router`        | Returns a list of injectables for the expression router, covers `/expressions` endpoints         |
+| `dep_experiment_result_router` | Returns a list of injectables for the expression router, covers `/experiment` endpoints          |
+
+### Endpoints authorization methods
+
+These methods define dependencies that will be injected on specific endpoints.
+If an endpoint must be protected by authz, implement the authz check for the appropriate endpoint.
+
+Again, make sure to raise exceptions on unauthorized requests and that the `dispatch` method handles said exceptions correctly.
+
+| Endpoint authorization methods       | Description                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `dep_public_endpoint`                | Returns injectable authz functions for public endpoints (applied to `/service-info`) |
+| `dep_authz_ingest`                   | Returns injectable authz functions for the `/ingest` endpoint                        |
+| `dep_authz_normalize`                | Returns injectable authz functions for the `/normalize` endpoint                     |
+| `dep_authz_expressions_list`         | Returns injectable authz functions for the `/expressions` endpoint                   |
+| `dep_authz_delete_experiment_result` | Returns injectable authz functions for the `/experiment (DELETE)` endpoint           |
+| `dep_authz_get_experiment_result`    | Returns injectable authz functions for the `/experiment (GET)` endpoint              |
+
 ## Using an authorization plugin
 
 When using the production image, the authz plugin must be mounted correclty on the container.
@@ -88,7 +135,7 @@ Following the API key authorization plugin [example](../etc/example.authz.module
 you will notice that the API key is not hard coded in a variable, but imported from the pydantic config.
 
 The TDS pydantic settings are configured to load a `.env` file from the authz plugin mount.
-After the .env is loaded, you can access the extra settings with: `config.model_extra.get(<lowercase .env var name>)`.
+After the `.env` is loaded, you can access the extra settings with: `config.model_extra.get(<lowercase .env var name>)`.
 
 In other scenarios, you could store any configuration values required for your authorization logic.
 

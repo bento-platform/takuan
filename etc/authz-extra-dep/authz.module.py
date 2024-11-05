@@ -31,8 +31,12 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         self.enabled = config.bento_authz_enabled
         self.logger = logger
 
+        # Get custom OPA configs from lib/.env
+        opa_host = config.model_extra.get("opa_host")
+        opa_port = int(config.model_extra.get("opa_host_port"))
+
         # Init the OPA client with the server
-        self.opa_client = OpaClient(host="opa-container", port=8181)
+        self.opa_client = OpaClient(host=opa_host, port=opa_port)
         try:
             # Commented out as this is not pointing to a real OPA server
             # self.logger.info(self.opa_client.check_connection())
