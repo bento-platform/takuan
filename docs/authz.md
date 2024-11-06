@@ -17,7 +17,7 @@ For different authorization requirements, you could choose to write a custom mod
 * The results of API calls to an authorization service
 * Policy engine evaluations, like OPA or Casbin
 
-TODO: add diagram showing how the plugin fits in with the app
+![AuthZ plugin overview](./authz-plugin.png)
 
 ## Implementing an authorization plugin
 
