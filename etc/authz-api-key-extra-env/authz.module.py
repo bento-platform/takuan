@@ -58,7 +58,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
             return JSONResponse(status_code=e.status_code, content=e.detail)
 
         return res
-    
+
     # API KEY authorization
 
     def _dep_check_api_key(self):

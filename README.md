@@ -38,7 +38,7 @@ You can then attach VS Code to the `tds` container, and use the preconfigured `P
 
 ## Authorization plugin
 
-The Transcriptomics-Data-Service is meant to be a reusable microservice that can be integrated in existing 
+The Transcriptomics Data Service is meant to be a reusable microservice that can be integrated in existing 
 stacks. Since authorization schemes vary across projects, TDS allows adopters to code their own authorization plugin, 
 enabling adopters to leverage their existing access control code, tools and policies.
 

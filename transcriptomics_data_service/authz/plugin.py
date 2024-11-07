@@ -3,7 +3,6 @@ from types import ModuleType
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 from transcriptomics_data_service.config import get_config
-from transcriptomics_data_service.logger import get_logger
 
 __all__ = ["authz_plugin"]
 
@@ -21,4 +20,4 @@ def import_module_from_path(path) -> None | ModuleType:
 
 
 # Get the concrete authz middleware from the provided plugin module
-authz_plugin = import_module_from_path("/tds/lib/authz.module.py")
+authz_plugin: BaseAuthzMiddleware = import_module_from_path("/tds/lib/authz.module.py")

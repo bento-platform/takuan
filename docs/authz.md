@@ -28,7 +28,7 @@ If authorization is enabled and there is no file at `lib/authz.module.py`, an ex
 will not start.
 
 Furthermore, the content of the file must follow some implementation guidelines:
-- You MUST declare a concrete class that extends [BaseAuthzMiddleware](./transcriptomics_data_service/authz/middleware_base.py)
+- You MUST declare a concrete class that extends [`BaseAuthzMiddleware`](./transcriptomics_data_service/authz/middleware_base.py)
 - In that class, you MUST implement the required functions from `BaseAuthzMiddleware`:
 - Finally, the script should expose an instance of your concrete authz middleware, named `authz_middleware`.
 
