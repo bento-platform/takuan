@@ -30,7 +30,6 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         # e.g. "<project-id>--<dataset-id>--<experiment_id>"
         # TODO: come up with better delimiters
         [project, dataset, experiment] = re.split("--", experiment_result_id)
-        print(project, dataset, experiment)
         self._logger.debug(
             f"Injecting resource: project={project} dataset={dataset} experiment_result_id={experiment_result_id}"
         )

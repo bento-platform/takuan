@@ -21,7 +21,7 @@ Since OPA does not ship with TDS, a requirements.txt file must be placed under '
 from opa_client.opa import OpaClient
 
 
-class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
+class OPAAuthzMiddleware(BaseAuthzMiddleware):
     """
     Concrete implementation of BaseAuthzMiddleware to authorize requests based on the provided API key.
     """
@@ -94,4 +94,4 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         return [self._dep_check_opa()]
 
 
-authz_middleware = ApiKeyAuthzMiddleware(config, logger)
+authz_middleware = OPAAuthzMiddleware(config, logger)

@@ -5,9 +5,6 @@ Although TDS is part of the Bento platform, it is meant to be reusable in other 
 Since authorization requirements and technology vary wildy across different projects, 
 TDS allows adopters to write their own authorization logic in python.
 
-For Bento, we rely on API calls to a custom authorization service, 
-see [etc/bento.authz.module.py](./etc/bento.authz.module.py) for an example.
-
 For different authorization requirements, you could choose to write a custom module that performs authorization checks based on:
 * An API key in the request header or in a cookie
 * A JWT bearer token, for example you could:
@@ -32,7 +29,7 @@ Furthermore, the content of the file must follow some implementation guidelines:
 - In that class, you MUST implement the required functions from `BaseAuthzMiddleware`:
 - Finally, the script should expose an instance of your concrete authz middleware, named `authz_middleware`.
 
-Looking at [bento.authz.module.py](./etc/bento.authz.module.py), we can see an implementation that is specific to 
+Looking at [bento.authz.module.py](../authz_plugins/bento.authz.module.py), we can see an implementation that is specific to 
 Bento's authorization service and libraries.
 
 Rather than directly implementing the `attach`, `dispatch` and other authorization logic, we rely on the `bento-lib` 
@@ -131,7 +128,7 @@ services:
 ## Providing extra configurations for a custom authorization plugin
 
 You can add custom settings for your authorization plugin.
-Following the API key authorization plugin [example](../etc/example.authz.module.py), 
+Following the API key authorization plugin [example](../authz_plugins/api_key/README.md), 
 you will notice that the API key is not hard coded in a variable, but imported from the pydantic config.
 
 The TDS pydantic settings are configured to load a `.env` file from the authz plugin mount.
@@ -156,3 +153,10 @@ allowing your plugin to use them.
 
 **Note: It is the plugin implementer's responsibility to ensure that these additional dependencies
 don't conflict with those in [pyproject.toml](../pyproject.toml)**
+
+# Reference implementations
+
+For examples on how authorization plugins are implemented, please refer to the following:
+- [Bento authorization service plugin](../authz_plugins/bento/README.md)
+- [API key authorization plugin](../authz_plugins/api_key/README.md)
+- [OPA authorization plugin](../authz_plugins/opa/README.md)
