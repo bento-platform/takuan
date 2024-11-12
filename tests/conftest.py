@@ -17,6 +17,7 @@ os.environ["BENTO_AUTHZ_SERVICE_URL"] = "https://authz.local"
 from transcriptomics_data_service.config import Config, get_config
 from transcriptomics_data_service.main import app
 
+
 @pytest.fixture
 def config() -> Config:
     return get_config()
@@ -30,6 +31,7 @@ async def get_test_db() -> AsyncGenerator[Database, None]:
 
 
 db_fixture = pytest_asyncio.fixture(get_test_db, name="db")
+
 
 @pytest_asyncio.fixture
 async def db_cleanup(db: Database):
@@ -47,6 +49,7 @@ async def db_cleanup(db: Database):
             """
         )
     await db.close()
+
 
 @pytest.fixture
 def test_client(db: Database):
