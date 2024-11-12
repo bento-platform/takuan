@@ -1,6 +1,6 @@
 from logging import Logger
-from typing import Annotated, Any, Awaitable, Callable, Coroutine
-from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response
+from typing import Any, Awaitable, Callable, Coroutine
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
@@ -23,7 +23,7 @@ from opa_client.opa import OpaClient
 
 class OPAAuthzMiddleware(BaseAuthzMiddleware):
     """
-    Concrete implementation of BaseAuthzMiddleware to authorize requests based on the provided API key.
+    Concrete implementation of BaseAuthzMiddleware to authorize requests with OPA.
     """
 
     def __init__(self, config: Config, logger: Logger) -> None:
@@ -64,7 +64,7 @@ class OPAAuthzMiddleware(BaseAuthzMiddleware):
 
         return res
 
-    # OPA authorization
+    # OPA authorization function
     def _dep_check_opa(self):
         async def inner(request: Request):
             # Check the permission using the OPA client.
@@ -76,7 +76,7 @@ class OPAAuthzMiddleware(BaseAuthzMiddleware):
 
         return Depends(inner)
 
-    # Authz logic: only check for valid API key
+    # Authz logic: OPA check injected at endpoint levels
 
     def dep_authz_ingest(self):
         return [self._dep_check_opa()]

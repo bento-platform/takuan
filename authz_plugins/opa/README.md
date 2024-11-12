@@ -2,7 +2,7 @@
 
 This sample authorization plugin showcases how to use OPA as the authorization service for TDS.
 While this could be done in pure Python with HTTP, 
-using the [OPA client for Python](https://github.com/Turall/OPA-python-client) can offer advantages.
+using the [OPA client for Python](https://github.com/Turall/OPA-python-client) is more convenient.
 
 As described in the authz module docs, additional dependencies can be provided for the authorization plugin.
 In this example, we include the OPA client as an additional dependency.
