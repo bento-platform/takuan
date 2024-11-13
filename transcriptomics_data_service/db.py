@@ -112,7 +112,7 @@ class Database(PgAsyncDatabase):
         where_clause = "WHERE experiment_result_id = $1" if exp_id is not None else ""
         query = f"SELECT * FROM gene_expressions {where_clause}"
         async with self.connect() as conn:
-            res = await conn.fetch(query, *((exp_id) if exp_id is not None else ()))
+            res = await conn.fetch(query, *(exp_id,) if exp_id is not None else ())
         for r in map(lambda g: self._deserialize_gene_expression(g), res):
             yield r
 
