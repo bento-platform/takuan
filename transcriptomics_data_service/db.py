@@ -83,26 +83,28 @@ class Database(PgAsyncDatabase):
         Rows on gene_expressions can only be created as part of an RCM ingestion.
         Ingestion is all-or-nothing, hence the transaction.
         """
-        async with transaction_conn.transaction():
-            # sub-transaction
-            for gene_expression in expressions:
-                await self._create_gene_expression(gene_expression, transaction_conn)
+        # Prepare data for bulk insertion
+        records = [
+            (
+                expr.gene_code,
+                expr.sample_id,
+                expr.experiment_result_id,
+                expr.raw_count,
+                expr.tpm_count,
+                expr.tmm_count,
+                expr.getmm_count,
+            )
+            for expr in expressions
+        ]
 
-    async def _create_gene_expression(self, expression: GeneExpression, transaction_conn: asyncpg.Connection):
-        # Creates a row on gene_expressions within a transaction.
         query = """
-        INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO gene_expressions (
+            gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         """
-        await transaction_conn.execute(
-            query,
-            expression.gene_code,
-            expression.sample_id,
-            expression.experiment_result_id,
-            expression.raw_count,
-            expression.tpm_count,
-            expression.tmm_count,
-        )
+
+        await transaction_conn.executemany(query, records)
+        self.logger.info(f"Inserted {len(records)} gene expression records.")
 
     async def fetch_expressions(self) -> tuple[GeneExpression, ...]:
         return tuple([r async for r in self._select_expressions(None)])
