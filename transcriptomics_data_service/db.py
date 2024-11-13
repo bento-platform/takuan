@@ -133,9 +133,7 @@ class Database(PgAsyncDatabase):
     # CRUD: gene_expression_norm
     ############################
 
-    async def fetch_gene_expressions_by_experiment_id(
-        self, experiment_result_id: str
-    ) -> Tuple[GeneExpression, ...]:
+    async def fetch_gene_expressions_by_experiment_id(self, experiment_result_id: str) -> Tuple[GeneExpression, ...]:
         """
         Fetch gene expressions for a specific experiment_result_id.
         """
@@ -147,9 +145,7 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query, experiment_result_id)
         return tuple([self._deserialize_gene_expression(record) for record in res])
 
-    async def update_normalized_expressions(
-        self, expressions: List[GeneExpression], method: str
-    ):
+    async def update_normalized_expressions(self, expressions: List[GeneExpression], method: str):
         """
         Update the normalized expressions in the database using batch updates.
         """
