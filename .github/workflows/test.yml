@@ -43,7 +43,7 @@ jobs:
       - name: Test
         run: |
           export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
-          poetry run pytest -svv --cov=transcriptomics_data_service --cov-branch
+          poetry run pytest -svv --cov=transcriptomics_data_service --cov-branch --cov-report xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
