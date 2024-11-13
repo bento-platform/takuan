@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS gene_expressions (
     raw_count INTEGER NOT NULL,
     tpm_count FLOAT,
     tmm_count FLOAT,
+    getmm_count FLOAT,
     PRIMARY KEY (gene_code, sample_id, experiment_result_id)
 );
 
