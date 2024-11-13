@@ -126,7 +126,7 @@ class Database(PgAsyncDatabase):
             raw_count=rec["raw_count"],
             tpm_count=rec["tpm_count"],
             tmm_count=rec["tmm_count"],
-        )
+            getmm_count=rec["getmm_count"],
 
     @asynccontextmanager
     async def transaction_connection(self):
