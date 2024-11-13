@@ -164,6 +164,7 @@ cython_debug/
 # vscode
 ./.vscode/*
 !./.vscode/lauch.json
+/.vscode/*
 
 # tds-db
 pg_data
