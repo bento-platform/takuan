@@ -3,7 +3,7 @@ from fastapi import Depends
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
 
 from .constants import SERVICE_GROUP, SERVICE_ARTIFACT
 

@@ -29,7 +29,7 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
         # Ownsership of an experiment is baked-in the ExperimentResult's ID in Bento
         # e.g. "<project-id>--<dataset-id>--<experiment_id>"
         # TODO: come up with better delimiters
-        [project, dataset, experiment] = re.split("--", experiment_result_id)
+        [project, dataset, experiment] = experiment_result_id.split("--")
         self._logger.debug(
             f"Injecting resource: project={project} dataset={dataset} experiment_result_id={experiment_result_id}"
         )
