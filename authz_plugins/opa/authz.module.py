@@ -2,7 +2,7 @@ from logging import Logger
 from typing import Any, Awaitable, Callable, Coroutine
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from opa_client.opa import OpaClient    # CUSTOM PLUGIN DEPENDENCY
+from opa_client.opa import OpaClient  # CUSTOM PLUGIN DEPENDENCY
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 from transcriptomics_data_service.config import Config, get_config
