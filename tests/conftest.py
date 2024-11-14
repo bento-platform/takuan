@@ -40,8 +40,8 @@ async def db_cleanup(db: Database):
     async with db.connect() as conn:
         await conn.execute(
             """
-            DROP TABLE IF EXISTS experiment_results;
             DROP TABLE IF EXISTS gene_expressions;
+            DROP TABLE IF EXISTS experiment_results;
             
             DROP INDEX IF EXISTS idx_gene_code;
             DROP INDEX IF EXISTS idx_sample_id;
