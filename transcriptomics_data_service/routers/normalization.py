@@ -10,6 +10,14 @@ from transcriptomics_data_service.scripts.normalize import (
     getmm_normalization,
 )
 
+# Constants for normalization methods
+NORM_TPM = "tpm"
+NORM_TMM = "tmm"
+NORM_GETMM = "getmm"
+
+# List of all valid normalization methods
+VALID_METHODS = [NORM_TPM, NORM_TMM, NORM_GETMM]
+
 __all__ = ["normalization_router"]
 
 normalization_router = APIRouter(prefix="/normalize")
@@ -29,13 +37,13 @@ async def normalize(
     Normalize gene expressions using the specified method for a given experiment_result_id.
     """
     # method validation
-    if method not in ["tpm", "tmm", "getmm"]:
+    if method not in VALID_METHODS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unsupported normalization method: {method}"
         )
 
     # load gene lengths
-    if method in ["tpm", "getmm"]:
+    if method in [NORM_TPM, NORM_GETMM]:
         if gene_lengths_file is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -46,12 +54,12 @@ async def normalize(
     raw_counts_df = await _fetch_raw_counts(db, experiment_result_id)
 
     # normalization
-    if method == "tpm":
+    if method == NORM_TPM:
         raw_counts_df, gene_lengths_series = _align_gene_lengths(raw_counts_df, gene_lengths)
         normalized_df = read_counts2tpm(raw_counts_df, gene_lengths_series)
-    elif method == "tmm":
+    elif method == NORM_TMM:
         normalized_df = tmm_normalization(raw_counts_df)
-    elif method == "getmm":
+    elif method == NORM_GETMM:
         raw_counts_df, gene_lengths_series = _align_gene_lengths(raw_counts_df, gene_lengths)
         normalized_df = getmm_normalization(raw_counts_df, gene_lengths_series)
 
@@ -135,9 +143,9 @@ async def _update_normalized_values(db, normalized_df: pd.DataFrame, experiment_
             sample_id=sample_id,
             experiment_result_id=experiment_result_id,
             raw_count=raw_count,
-            tpm_count=row["NormalizedValue"] if method == "tpm" else None,
-            tmm_count=row["NormalizedValue"] if method == "tmm" else None,
-            getmm_count=row["NormalizedValue"] if method == "getmm" else None,
+            tpm_count=row["NormalizedValue"] if method == NORM_TPM else None,
+            tmm_count=row["NormalizedValue"] if method == NORM_TMM else None,
+            getmm_count=row["NormalizedValue"] if method == NORM_GETMM else None,
         )
         expressions.append(gene_expression)
 
