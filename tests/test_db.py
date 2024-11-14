@@ -1,7 +1,8 @@
+import pytest
 from transcriptomics_data_service.db import Database
 from transcriptomics_data_service.models import ExperimentResult
 
-
+@pytest.mark.asyncio
 async def test_create_experiment_result(db: Database, db_cleanup):
     exp_id = "exp_test"
     exp_result = ExperimentResult(
