@@ -1,6 +1,5 @@
 from logging import Logger
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-import json
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from io import StringIO
 import pandas as pd
 
@@ -34,7 +33,9 @@ async def ingest(
     # Handling ingestion as a transactional operation
     async with db.transaction_connection() as transaction_con:
         experiment_result = ExperimentResult(
-            experiment_result_id=experiment_result_id, assembly_name=assembly_name, assembly_id=assembly_id
+            experiment_result_id=experiment_result_id,
+            assembly_name=assembly_name,
+            assembly_id=assembly_id,
         )
         await db.create_experiment_result(experiment_result, transaction_con)
 
@@ -80,7 +81,10 @@ def _load_csv(file_bytes: bytes, logger: Logger) -> pd.DataFrame:
     except pd.errors.ParserError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Value error in CSV data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Value error in CSV data: {e}",
+        )
 
 
 @ingest_router.post("/normalize/{experiment_result_id}")
@@ -90,7 +94,7 @@ async def normalize(
     features_lengths_file: UploadFile = File(...),
     status_code=status.HTTP_200_OK,
 ):
-    features_lengths = json.load(features_lengths_file.file)
+    # features_lengths = json.load(features_lengths_file.file)
     # TODO validate shape
     # TODO validate experiment_result_id exists
     # TODO algorithm selection argument?

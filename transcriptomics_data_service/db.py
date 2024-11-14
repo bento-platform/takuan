@@ -34,7 +34,12 @@ class Database(PgAsyncDatabase):
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
         """
-        execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
+        execute_args = (
+            query,
+            exp.experiment_result_id,
+            exp.assembly_id,
+            exp.assembly_name,
+        )
         if transaction_conn is not None:
             # execute within transaction if a transaction_conn is passed
             await transaction_conn.execute(*execute_args)
@@ -48,7 +53,10 @@ class Database(PgAsyncDatabase):
     async def read_experiment_result(self, exp_id: str) -> ExperimentResult | None:
         conn: asyncpg.Connection
         async with self.connect() as conn:
-            res = await conn.fetchrow("SELECT * FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+            res = await conn.fetchrow(
+                "SELECT * FROM experiment_results WHERE experiment_result_id = $1",
+                exp_id,
+            )
 
         if res is None:
             return None
