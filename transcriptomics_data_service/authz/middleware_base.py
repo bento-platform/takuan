@@ -4,7 +4,6 @@ from typing import Awaitable, Callable, Sequence
 
 
 class BaseAuthzMiddleware:
-
     # Middleware lifecycle functions
 
     def attach(self, app: FastAPI):

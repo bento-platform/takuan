@@ -24,7 +24,7 @@ jobs:
         run: poetry install
       - name: Format check
         run: |
-          poetry run black --check transcriptomics_data_service tests authz_plugins
+          poetry run ruff format --check
       - name: Lint check
         run: |
           poetry run ruff check
