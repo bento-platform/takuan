@@ -2,6 +2,7 @@ from logging import Logger
 from typing import Any, Awaitable, Callable, Coroutine
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+from opa_client.opa import OpaClient    # CUSTOM PLUGIN DEPENDENCY
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 from transcriptomics_data_service.config import Config, get_config
@@ -10,15 +11,12 @@ from transcriptomics_data_service.logger import get_logger
 config = get_config()
 logger = get_logger(config)
 
-
 """
 CUSTOM PLUGIN DEPENDENCY
 Extra dependencies can be added if the authz plugin requires them.
-In this example, the authz module imports the OPA agent.
+In this example, the authz module imports the OPA client.
 Since OPA does not ship with TDS, a requirements.txt file must be placed under 'lib'.
 """
-
-from opa_client.opa import OpaClient
 
 
 class OPAAuthzMiddleware(BaseAuthzMiddleware):
@@ -37,12 +35,10 @@ class OPAAuthzMiddleware(BaseAuthzMiddleware):
 
         # Init the OPA client with the server
         self.opa_client = OpaClient(host=opa_host, port=opa_port)
-        try:
-            # Commented out as this is not pointing to a real OPA server
-            # self.logger.info(self.opa_client.check_connection())
-            pass
-        except:
-            raise Exception("Could not establish connection to the OPA service.")
+
+        # This is not pointing to a real OPA server.
+        # Will raise an exception if connection is invalid.
+        self.logger.info(self.opa_client.check_connection())
 
     # Middleware lifecycle
 

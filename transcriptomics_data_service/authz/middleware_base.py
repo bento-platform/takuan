@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Request, Response, status
+from fastapi import Depends, FastAPI, Request, Response
 
 from typing import Awaitable, Callable, Sequence
 
@@ -28,7 +28,7 @@ class BaseAuthzMiddleware:
         -   Raise and catch exception based on authorization results
         -   Handle unauthorized responses
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def mark_authz_done(self, request: Request):
         """

@@ -1,6 +1,6 @@
 from logging import Logger
 from typing import Annotated, Any, Awaitable, Callable, Coroutine, Sequence
-from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response
 from fastapi.responses import JSONResponse
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware

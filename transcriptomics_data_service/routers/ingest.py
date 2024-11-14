@@ -1,6 +1,5 @@
 from logging import Logger
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-import json
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from io import StringIO
 import pandas as pd
 
@@ -98,7 +97,7 @@ async def normalize(
     features_lengths_file: UploadFile = File(...),
     status_code=status.HTTP_200_OK,
 ):
-    features_lengths = json.load(features_lengths_file.file)
+    # features_lengths = json.load(features_lengths_file.file)
     # TODO validate shape
     # TODO validate experiment_result_id exists
     # TODO algorithm selection argument?

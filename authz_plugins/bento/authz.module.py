@@ -8,7 +8,6 @@ from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 
-import re
 
 config = get_config()
 logger = get_logger(config)
