@@ -20,7 +20,8 @@ services:
     command: /bin/bash -c '
       cd /tds &&
       /poetry_user_install_dev.bash &&
-      pytest -svv --cov=transcriptomics_data_service --cov-branch
+      pytest -svv --cov=transcriptomics_data_service --cov-branch &&
+      coverage html
       '
 
   tds-db:
