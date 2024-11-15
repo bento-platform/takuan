@@ -1,4 +1,3 @@
-from asyncpg import Connection, UniqueViolationError
 import pytest
 from transcriptomics_data_service.db import Database
 from transcriptomics_data_service.models import ExperimentResult, GeneExpression
@@ -43,7 +42,7 @@ async def test_delete_experiment_result(db: Database, db_cleanup):
     await db.create_experiment_result(TEST_EXPERIMENT_RESULT)
     await db.delete_experiment_result(TEST_EXPERIMENT_RESULT_ID)
     db_exp_result = await db.read_experiment_result(TEST_EXPERIMENT_RESULT_ID)
-    assert db_exp_result == None
+    assert db_exp_result is None
 
 
 ########################
@@ -75,9 +74,9 @@ async def test_transaction(db: Database, db_cleanup):
             await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)
             await db.create_gene_expressions([TEST_GENE_EXPRESSION, TEST_GENE_EXPRESSION], conn)
             assert False
-        except:
+        except Exception:
             assert True
     db_exp = await db.read_experiment_result(TEST_EXPERIMENT_RESULT_ID)
     db_gene_expr = await db.fetch_expressions()
-    assert db_exp == None
+    assert db_exp is None
     assert len(db_gene_expr) == 0
