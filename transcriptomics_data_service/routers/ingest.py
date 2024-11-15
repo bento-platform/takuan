@@ -1,23 +1,26 @@
 from logging import Logger
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-import json
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from io import StringIO
 import pandas as pd
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import ExperimentResult, GeneExpression
+from transcriptomics_data_service.authz.plugin import authz_plugin
 
 __all__ = ["ingest_router"]
 
-ingest_router = APIRouter()
+ingest_router = APIRouter(dependencies=authz_plugin.dep_ingest_router())
 
+# TODO make configurable? an argument?
 GENE_ID_KEY = "GeneID"
 
 
 @ingest_router.post(
     "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
     status_code=status.HTTP_200_OK,
+    # Injects the plugin authz middleware dep_authorize_ingest function
+    dependencies=authz_plugin.dep_authz_ingest(),
 )
 async def ingest(
     db: DatabaseDependency,
@@ -83,14 +86,18 @@ def _load_csv(file_bytes: bytes, logger: Logger) -> pd.DataFrame:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Value error in CSV data: {e}")
 
 
-@ingest_router.post("/normalize/{experiment_result_id}")
+@ingest_router.post(
+    "/normalize/{experiment_result_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=authz_plugin.dep_authz_normalize(),
+)
 async def normalize(
     db: DatabaseDependency,
     experiment_result_id: str,
     features_lengths_file: UploadFile = File(...),
     status_code=status.HTTP_200_OK,
 ):
-    features_lengths = json.load(features_lengths_file.file)
+    # features_lengths = json.load(features_lengths_file.file)
     # TODO validate shape
     # TODO validate experiment_result_id exists
     # TODO algorithm selection argument?

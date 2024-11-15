@@ -22,6 +22,9 @@ jobs:
         run: pip install poetry
       - name: Install dependencies
         run: poetry install
-      - name: Lint
+      - name: Format check
         run: |
-          poetry run black --check transcriptomics_data_service tests
+          poetry run ruff format --check
+      - name: Lint check
+        run: |
+          poetry run ruff check
