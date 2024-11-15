@@ -23,7 +23,6 @@ TEST_GENE_EXPRESSION = GeneExpression(
 
 @pytest.mark.asyncio
 async def test_create_read_experiment_result(db: Database, db_cleanup):
-    # exp_result = await _create_experiment_result(db)
     await db.create_experiment_result(TEST_EXPERIMENT_RESULT)
     db_exp_result = await db.read_experiment_result(TEST_EXPERIMENT_RESULT_ID)
     assert TEST_EXPERIMENT_RESULT == db_exp_result
