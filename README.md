@@ -27,6 +27,9 @@ For local development, you can use the [docker-compose.dev.yaml](./docker-compos
 The server starts in reload mode to quickly reflect local changes, and debugpy is listening on the container's internal port `9511`.
 
 ```bash
+# Set UID for directory permissions in the container
+export UID=$(id -u)
+
 # start
 docker compose -f ./docker-compose.dev.yaml up --build -d
 
