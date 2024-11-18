@@ -1,6 +1,6 @@
 # transcriptomics_data_service
 
-WORK IN PROGRESS.
+**Disclaimer: work in progress.**
 
 The Transcriptomics Data Service (TDS) is intended to ingest, organize and query data from transcriptomics experiments through an API.
 
@@ -46,6 +46,12 @@ See the [authorization docs](./docs/authz.md) for more information on how to cre
 
 ## Endpoints
 
-* /service-info
+TODO: replace this with Swagger UI docs generated from CI workflows.
+
+* `/service-info`
   * GA4GH service info
-* /ingest (TODO)
+* `/ingest`
+* `/normalize`
+* `/expressions`
+* `/experiment`
+* `/search` (WIP)
