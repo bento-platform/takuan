@@ -14,7 +14,11 @@ services:
       - CORS_ORIGINS="*"
       - BENTO_AUTHZ_SERVICE_URL=""
     volumes:
-      - $PWD:/tds     # mounts local repository
+      # Mounts local repository
+      - $PWD:/tds
+      # Use API key plugin for authz testing
+      - $PWD/authz_plugins/api_key:/tds/lib
+      - $PWD/authz_plugins/api_key/example.env:/tds/lib/.env # map example.env to .env
     ports:
       - "5000:5000"
     command: /bin/bash -c '
