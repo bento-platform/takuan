@@ -40,6 +40,10 @@ jobs:
         run: pip install poetry
       - name: Install dependencies
         run: poetry install
+      - name: Setup authz plugin
+        run: |
+          cp authz_plugins/api_key/authz.module.py lib/
+          cp authz_plugins/api_key/example.env lib/.env
       - name: Test
         run: |
           export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
