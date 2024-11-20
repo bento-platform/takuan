@@ -42,6 +42,7 @@ jobs:
         run: poetry install
       - name: Setup authz plugin
         run: |
+          mkdir -p lib
           cp authz_plugins/api_key/authz.module.py lib/
           cp authz_plugins/api_key/example.env lib/.env
       - name: Test
