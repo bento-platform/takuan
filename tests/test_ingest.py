@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -11,7 +12,7 @@ from transcriptomics_data_service.logger import get_logger
 config = get_config()
 logger = get_logger(config)
 
-TEST_FILES_DIR = "/tds/tests/data"
+TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "data")
 RCM_FILE_PATH = f"{TEST_FILES_DIR}/rcm_file.csv"
 INGEST_ARGS = dict(
     exp_id="exp-12345",
