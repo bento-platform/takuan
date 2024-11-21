@@ -23,7 +23,7 @@ class Config(BentoFastAPIBaseConfig):
     database_uri: str = "postgres://localhost:5432"
 
     # Allow extra configs from /tds/lib/.env for custom authz configuration
-    model_config = SettingsConfigDict(env_file="/tds/lib/.env", extra="allow")
+    model_config = SettingsConfigDict(env_file="./lib/.env", extra="allow")
 
 
 @lru_cache()

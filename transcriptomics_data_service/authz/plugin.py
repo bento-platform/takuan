@@ -20,4 +20,4 @@ def import_module_from_path(path) -> None | ModuleType:
 
 
 # Get the concrete authz middleware from the provided plugin module
-authz_plugin: BaseAuthzMiddleware = import_module_from_path("/tds/lib/authz.module.py")
+authz_plugin: BaseAuthzMiddleware = import_module_from_path("./lib/authz.module.py")

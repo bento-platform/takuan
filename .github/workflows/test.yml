@@ -42,9 +42,9 @@ jobs:
         run: poetry install
       - name: Setup authz plugin
         run: |
-          mkdir -p /tds/lib
-          cp authz_plugins/api_key/authz.module.py /tds/lib/
-          cp authz_plugins/api_key/example.env /tds/lib/.env
+          mkdir lib
+          cp authz_plugins/api_key/authz.module.py lib/
+          cp authz_plugins/api_key/example.env lib/.env
       - name: Test
         run: |
           export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
