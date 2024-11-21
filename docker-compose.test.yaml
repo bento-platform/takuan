@@ -21,12 +21,6 @@ services:
       - $PWD/authz_plugins/api_key/example.env:/tds/lib/.env # map example.env to .env
     ports:
       - "5000:5000"
-    command: /bin/bash -c '
-      cd /tds &&
-      /poetry_user_install_dev.bash &&
-      pytest -svv --cov=transcriptomics_data_service --cov-branch &&
-      coverage html
-      '
 
   tds-db:
     image: postgres:16
