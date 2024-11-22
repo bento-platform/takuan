@@ -3,8 +3,8 @@ import asyncpg
 from fastapi.testclient import TestClient
 import pytest
 import os
-
 import pytest_asyncio
+from httpx._types import HeaderTypes
 
 from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
@@ -56,3 +56,11 @@ def test_client(db: Database):
     with TestClient(app) as client:
         app.dependency_overrides[get_db] = get_test_db
         yield client
+
+
+@pytest.fixture
+def authz_headers(config) -> HeaderTypes:
+    api_key = config.model_extra.get("api_key")
+    return {
+        "x-api-key": api_key
+    }
