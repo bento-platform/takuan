@@ -6,6 +6,7 @@ import os
 import pytest_asyncio
 from httpx._types import HeaderTypes
 
+from tests.test_db import TEST_EXPERIMENT_RESULT
 from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
 
@@ -51,6 +52,11 @@ async def db_cleanup(db: Database):
     await db.close()
 
 
+@pytest_asyncio.fixture
+async def db_with_experiment(db: Database):
+    await db.create_experiment_result(TEST_EXPERIMENT_RESULT)
+
+
 @pytest.fixture
 def test_client(db: Database):
     with TestClient(app) as client:
@@ -61,6 +67,9 @@ def test_client(db: Database):
 @pytest.fixture
 def authz_headers(config) -> HeaderTypes:
     api_key = config.model_extra.get("api_key")
-    return {
-        "x-api-key": api_key
-    }
+    return {"x-api-key": api_key}
+
+
+@pytest.fixture
+def authz_headers_bad() -> HeaderTypes:
+    return {"x-api-key": "bad key"}

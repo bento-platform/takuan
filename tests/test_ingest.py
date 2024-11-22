@@ -45,55 +45,72 @@ def test_ingest_missing_api_key(test_client: TestClient, db_cleanup):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_ingest_unauthorized(test_client: TestClient, db_cleanup):
+def test_ingest_unauthorized(test_client, authz_headers_bad, db_cleanup):
     response = _ingest_rcm_file(
         test_client,
         file_path=RCM_FILE_PATH,
-        headers={"x-api-key": "THIS KEY IS INVALID"},
+        headers=authz_headers_bad,
         **INGEST_ARGS,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_ingest_authorized(test_client: TestClient, db_cleanup):
-    api_key = config.model_extra.get("api_key")
+def test_ingest_authorized(test_client, authz_headers, db_cleanup):
     response = _ingest_rcm_file(
         test_client,
         file_path=RCM_FILE_PATH,
-        headers={"x-api-key": api_key},
+        headers=authz_headers,
         **INGEST_ARGS,
     )
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_ingest_authorized_duplicate(test_client: TestClient, db_cleanup):
-    api_key = config.model_extra.get("api_key")
+def test_ingest_authorized_duplicate(test_client, authz_headers, db_cleanup):
     response = _ingest_rcm_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_duplicates.csv",
-        headers={"x-api-key": api_key},
+        headers=authz_headers,
         **INGEST_ARGS,
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_ingest_parser_error(test_client: TestClient, db_cleanup):
-    api_key = config.model_extra.get("api_key")
+def test_ingest_parser_error(test_client, authz_headers, db_cleanup):
     response = _ingest_rcm_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_bad_values.csv",
-        headers={"x-api-key": api_key},
+        headers=authz_headers,
         **INGEST_ARGS,
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_ingest_invalid_csv(test_client: TestClient, db_cleanup):
-    api_key = config.model_extra.get("api_key")
+def test_ingest_invalid_csv(test_client, authz_headers, db_cleanup):
     response = _ingest_rcm_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_bad_column.csv",
-        headers={"x-api-key": api_key},
+        headers=authz_headers,
         **INGEST_ARGS,
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_normalize_400(test_client: TestClient, db_cleanup):
+    response = test_client.post("/normalize/some-id")
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_normalize_403(test_client: TestClient, authz_headers_bad, db_cleanup):
+    response = test_client.post("/normalize/some-id", headers=authz_headers_bad)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_normalize_200(test_client: TestClient, authz_headers, db_cleanup):
+    # TODO real tests in normalization PR
+    with open(f"{TEST_FILES_DIR}/gene_lengths.csv", "rb") as file:
+        response = test_client.post(
+            url="/normalize/some-id",
+            files=[("features_lengths_file", file)],
+            headers=authz_headers,
+        )
+    assert response.status_code == status.HTTP_200_OK
