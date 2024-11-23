@@ -1,5 +1,4 @@
-import pytest
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
 
