@@ -1,5 +1,10 @@
 # transcriptomics_data_service
 
+![Test Status](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/bento-platform/transcriptomics_data_service/graph/badge.svg)](https://codecov.io/gh/bento-platform/transcriptomics_data_service)
+![Lint Status](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/lint.yml/badge.svg)
+![Docker Build](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/build.yml/badge.svg)
+
 **Disclaimer: work in progress.**
 
 The Transcriptomics Data Service (TDS) is intended to ingest, organize and query data from transcriptomics experiments through an API.
