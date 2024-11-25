@@ -11,7 +11,7 @@ The Transcriptomics Data Service (TDS) is intended to ingest, organize and query
 
 ## Starting a standalone TDS
 
-Start the TDS server with a database for testing by running the following command.
+Start the TDS server with a local PostgreSQL database for testing by running the following command.
 ```bash
 # start
 docker compose up --build -d
@@ -63,3 +63,24 @@ TODO: replace this with Swagger UI docs generated from CI workflows.
 * `/expressions`
 * `/experiment`
 * `/search` (WIP)
+
+## Docker images
+
+The Transcriptomics Data Service is packaged and released as a Docker image using GitHub Actions.
+
+Images are published in GitHub's container registry, [here](https://github.com/bento-platform/transcriptomics_data_service/pkgs/container/transcriptomics_data_service).
+
+Images are built and published using the following tags:
+- `<version>`: Build for a tagged release
+- `latest`: Build for the latest tagged release
+- `edge`: The top of the `main` branch
+- `pr-<number>`: Build for a pull request that targets `main`
+
+Note: Images with the `-dev` suffix (e.g. `edge-dev`) are for local development.
+
+
+To pull an image, or reference it in a compose file, use this pattern:
+
+```shell
+docker pull ghcr.io/bento-platform/transcriptomics_data_service:<TAG>
+```
