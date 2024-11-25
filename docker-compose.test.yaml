@@ -1,0 +1,33 @@
+# Standalone docker-compose file to run local tests using the PG database
+
+services:
+  tds:
+    build:
+      context: .
+      dockerfile: ./dev.Dockerfile
+    container_name: tds
+    depends_on:
+      - tds-db
+    environment:
+      - BENTO_UID=${UID}
+      - DATABASE_URI=postgres://tds_user:tds_password@tds-db:5432/tds_db
+      - CORS_ORIGINS="*"
+      - BENTO_AUTHZ_SERVICE_URL=""
+    volumes:
+      # Mounts local repository
+      - $PWD:/tds
+      # Use API key plugin for authz testing
+      - $PWD/authz_plugins/api_key:/tds/lib
+      - $PWD/authz_plugins/api_key/example.env:/tds/lib/.env # map example.env to .env
+    ports:
+      - "5000:5000"
+
+  tds-db:
+    image: postgres:16
+    container_name: tds-db
+    environment:
+      - POSTGRES_USER=tds_user
+      - POSTGRES_PASSWORD=tds_password
+      - POSTGRES_DB=tds_db
+    expose:
+      - 5432

@@ -34,7 +34,12 @@ class Database(PgAsyncDatabase):
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
         """
-        execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
+        execute_args = (
+            query,
+            exp.experiment_result_id,
+            exp.assembly_id,
+            exp.assembly_name,
+        )
         if transaction_conn is not None:
             # execute within transaction if a transaction_conn is passed
             await transaction_conn.execute(*execute_args)
@@ -48,7 +53,10 @@ class Database(PgAsyncDatabase):
     async def read_experiment_result(self, exp_id: str) -> ExperimentResult | None:
         conn: asyncpg.Connection
         async with self.connect() as conn:
-            res = await conn.fetchrow("SELECT * FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+            res = await conn.fetchrow(
+                "SELECT * FROM experiment_results WHERE experiment_result_id = $1",
+                exp_id,
+            )
 
         if res is None:
             return None
@@ -83,10 +91,8 @@ class Database(PgAsyncDatabase):
         Rows on gene_expressions can only be created as part of an RCM ingestion.
         Ingestion is all-or-nothing, hence the transaction.
         """
-        async with transaction_conn.transaction():
-            # sub-transaction
-            for gene_expression in expressions:
-                await self._create_gene_expression(gene_expression, transaction_conn)
+        for gene_expression in expressions:
+            await self._create_gene_expression(gene_expression, transaction_conn)
 
     async def _create_gene_expression(self, expression: GeneExpression, transaction_conn: asyncpg.Connection):
         # Creates a row on gene_expressions within a transaction.
@@ -104,15 +110,15 @@ class Database(PgAsyncDatabase):
             expression.tmm_count,
         )
 
-    async def fetch_expressions(self) -> tuple[GeneExpression, ...]:
-        return tuple([r async for r in self._select_expressions(None)])
+    async def fetch_expressions(self, experiment_result_id: str | None = None) -> tuple[GeneExpression, ...]:
+        return tuple([r async for r in self._select_expressions(exp_id=experiment_result_id)])
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
         where_clause = "WHERE experiment_result_id = $1" if exp_id is not None else ""
         query = f"SELECT * FROM gene_expressions {where_clause}"
         async with self.connect() as conn:
-            res = await conn.fetch(query, *((exp_id) if exp_id is not None else ()))
+            res = await conn.fetch(query, *((exp_id,) if exp_id is not None else ()))
         for r in map(lambda g: self._deserialize_gene_expression(g), res):
             yield r
 

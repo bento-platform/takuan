@@ -1,6 +1,6 @@
 from logging import Logger
 from typing import Annotated, Any, Awaitable, Callable, Coroutine, Sequence
-from fastapi import Depends, FastAPI, HTTPException, Header, Request, Response
+from fastapi import Depends, HTTPException, Header, Request, Response
 from fastapi.responses import JSONResponse
 
 from transcriptomics_data_service.authz.middleware_base import BaseAuthzMiddleware
@@ -39,9 +39,6 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
             raise ValueError("Expected variable 'API_KEY' is not set in the plugin's .env")
 
     # Middleware lifecycle
-
-    def attach(self, app: FastAPI):
-        app.middleware("http")(self.dispatch)
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
