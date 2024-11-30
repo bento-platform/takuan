@@ -11,6 +11,11 @@ from .config import Config, ConfigDependency
 from .logger import LoggerDependency
 from .models import ExperimentResult, GeneExpression
 
+NORM_METHOD_COLS = {
+    "tpm": "tpm_count",
+    "tmm": "tmm_count",
+    "getmm": "getmm_count",
+}
 
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 
@@ -118,21 +123,6 @@ class Database(PgAsyncDatabase):
         for r in map(lambda g: self._deserialize_gene_expression(g), res):
             yield r
 
-    def _deserialize_gene_expression(self, rec: asyncpg.Record) -> GeneExpression:
-        return GeneExpression(
-            gene_code=rec["gene_code"],
-            sample_id=rec["sample_id"],
-            experiment_result_id=rec["experiment_result_id"],
-            raw_count=rec["raw_count"],
-            tpm_count=rec["tpm_count"],
-            tmm_count=rec["tmm_count"],
-            getmm_count=rec["getmm_count"],
-        )
-
-    ############################
-    # CRUD: gene_expression_norm
-    ############################
-
     async def fetch_gene_expressions_by_experiment_id(self, experiment_result_id: str) -> Tuple[GeneExpression, ...]:
         """
         Fetch gene expressions for a specific experiment_result_id.
@@ -145,61 +135,70 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query, experiment_result_id)
         return tuple([self._deserialize_gene_expression(record) for record in res])
 
+    def _deserialize_gene_expression(self, rec: asyncpg.Record) -> GeneExpression:
+        return GeneExpression(
+            gene_code=rec["gene_code"],
+            sample_id=rec["sample_id"],
+            experiment_result_id=rec["experiment_result_id"],
+            raw_count=rec["raw_count"],
+            tpm_count=rec["tpm_count"],
+            tmm_count=rec["tmm_count"],
+            getmm_count=rec["getmm_count"],
+        )
+
+    ############################
+    # Normalization Methods
+    ############################
+
     async def update_normalized_expressions(self, expressions: List[GeneExpression], method: str):
         """
         Update the normalized expressions in the database using batch updates.
         """
+        column = NORM_METHOD_COLS.get(method)
+        if not column:
+            raise ValueError(f"Unsupported normalization method: {method}")
         conn: asyncpg.Connection
-        async with self.connect() as conn:
-            async with conn.transaction():
-                if method == "tpm":
-                    column = "tpm_count"
-                elif method == "tmm":
-                    column = "tmm_count"
-                elif method == "getmm":
-                    column = "getmm_count"
-                else:
-                    raise ValueError(f"Unsupported normalization method: {method}")
+        async with self.transaction_connection() as conn:
 
-                # Prepare data for bulk update
-                records = [
-                    (
-                        getattr(expr, column),
-                        expr.experiment_result_id,
-                        expr.gene_code,
-                        expr.sample_id,
-                    )
-                    for expr in expressions
-                ]
-
-                await conn.execute(
-                    f"""
-                    CREATE TEMPORARY TABLE temp_updates (
-                        value DOUBLE PRECISION,
-                        experiment_result_id VARCHAR(255),
-                        gene_code VARCHAR(255),
-                        sample_id VARCHAR(255)
-                    ) ON COMMIT DROP
-                    """
+            # Prepare data for bulk update
+            records = [
+                (
+                    getattr(expr, column),
+                    expr.experiment_result_id,
+                    expr.gene_code,
+                    expr.sample_id,
                 )
+                for expr in expressions
+            ]
 
-                await conn.copy_records_to_table(
-                    "temp_updates",
-                    records=records,
-                    columns=["value", "experiment_result_id", "gene_code", "sample_id"],
-                )
+            await conn.execute(
+                f"""
+                CREATE TEMPORARY TABLE temp_updates (
+                    value DOUBLE PRECISION,
+                    experiment_result_id VARCHAR(255),
+                    gene_code VARCHAR(255),
+                    sample_id VARCHAR(255)
+                ) ON COMMIT DROP
+                """
+            )
 
-                # Update the main table
-                await conn.execute(
-                    f"""
-                    UPDATE gene_expressions
-                    SET {column} = temp_updates.value
-                    FROM temp_updates
-                    WHERE gene_expressions.experiment_result_id = temp_updates.experiment_result_id
-                      AND gene_expressions.gene_code = temp_updates.gene_code
-                      AND gene_expressions.sample_id = temp_updates.sample_id
-                    """
-                )
+            await conn.copy_records_to_table(
+                "temp_updates",
+                records=records,
+                columns=["value", "experiment_result_id", "gene_code", "sample_id"],
+            )
+
+            # Update the main table
+            await conn.execute(
+                f"""
+                UPDATE gene_expressions
+                SET {column} = temp_updates.value
+                FROM temp_updates
+                WHERE gene_expressions.experiment_result_id = temp_updates.experiment_result_id
+                    AND gene_expressions.gene_code = temp_updates.gene_code
+                    AND gene_expressions.sample_id = temp_updates.sample_id
+                """
+            )
         self.logger.info(f"Updated normalized values for method '{method}'.")
 
     @asynccontextmanager
