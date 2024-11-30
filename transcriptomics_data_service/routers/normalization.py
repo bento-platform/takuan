@@ -24,12 +24,12 @@ normalization_router = APIRouter(prefix="/normalize")
 
 
 @normalization_router.post(
-    "/{method}/{experiment_result_id}",
+    "/{experiment_result_id}/{method}",
     status_code=status.HTTP_200_OK,
 )
 async def normalize(
-    method: str,
     experiment_result_id: str,
+    method: str,
     db: DatabaseDependency,
     gene_lengths_file: UploadFile = File(None),
 ):
