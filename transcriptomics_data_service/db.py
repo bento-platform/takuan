@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, AsyncIterator, List, Tuple
+from typing import Annotated, AsyncIterator, List, Tuple, Optional
 import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
@@ -196,6 +196,82 @@ class Database(PgAsyncDatabase):
                 # operations must be made using this connection for the transaction to apply
                 yield conn
 
+    async def fetch_gene_expressions(
+            self,
+            genes: Optional[List[str]] = None,
+            experiments: Optional[List[str]] = None,
+            sample_ids: Optional[List[str]] = None,
+            method: str = "raw",
+            page: int = 1,
+            page_size: int = 100,
+            paginate: bool = True,
+            ) -> Tuple[List[GeneExpression], int]:
+            """
+            Fetch gene expressions based on genes, experiments, sample_ids, and method, with optional pagination.
+            Returns a tuple of (expressions list, total_records count).
+            """
+            conn: asyncpg.Connection
+            async with self.connect() as conn:
+                # Query builder
+                base_query = """
+                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
+                FROM gene_expressions
+                """
+                count_query = "SELECT COUNT(*) FROM gene_expressions"
+                conditions = []
+                params = []
+                param_counter = 1
+
+                if genes:
+                    conditions.append(f"gene_code = ANY(${param_counter}::text[])")
+                    params.append(genes)
+                    param_counter += 1
+
+                if experiments:
+                    conditions.append(f"experiment_result_id = ANY(${param_counter}::text[])")
+                    params.append(experiments)
+                    param_counter += 1
+
+                if sample_ids:
+                    conditions.append(f"sample_id = ANY(${param_counter}::text[])")
+                    params.append(sample_ids)
+                    param_counter += 1
+
+                if method != "raw":
+                    conditions.append(f"{method}_count IS NOT NULL")
+
+                where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+
+                order_clause = " ORDER BY gene_code, sample_id"
+
+                query = base_query + where_clause + order_clause
+                count_query += where_clause
+
+                # Pagination
+                if paginate:
+                    limit_offset_clause = f" LIMIT ${param_counter} OFFSET ${param_counter + 1}"
+                    params.extend([page_size, (page - 1) * page_size])
+                    query += limit_offset_clause
+
+                total_records_params = params[:-2] if paginate else params
+                total_records = await conn.fetchval(count_query, *total_records_params)
+
+                res = await conn.fetch(query, *params)
+
+            expressions = [
+                GeneExpression(
+                    gene_code=record["gene_code"],
+                    sample_id=record["sample_id"],
+                    experiment_result_id=record["experiment_result_id"],
+                    raw_count=record["raw_count"],
+                    tpm_count=record["tpm_count"],
+                    tmm_count=record["tmm_count"],
+                    getmm_count=record["getmm_count"],
+                )
+                for record in res
+            ]
+
+            return expressions, total_records
 
 @lru_cache()
 def get_db(config: ConfigDependency, logger: LoggerDependency) -> Database:
