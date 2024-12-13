@@ -113,7 +113,7 @@ async def get_expressions_post(
 ):
     """
     Retrieve gene expression data via POST request.
-    
+
     Example JSON body:
     {
         "genes": ["gene1", "gene2"],
