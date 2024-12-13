@@ -135,7 +135,9 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query, experiment_result_id)
         return tuple([self._deserialize_gene_expression(record) for record in res])
 
-    async def fetch_gene_expressions(self, experiments: list[str], method: str = "raw", paginate: bool = False) -> Tuple[Tuple[GeneExpression, ...], int]:
+    async def fetch_gene_expressions(
+        self, experiments: list[str], method: str = "raw", paginate: bool = False
+    ) -> Tuple[Tuple[GeneExpression, ...], int]:
         if not experiments:
             return (), 0
         # TODO: refactor this fetch_gene_expressions_by_experiment_id and implement pagination
