@@ -111,8 +111,6 @@ class Database(PgAsyncDatabase):
         await transaction_conn.executemany(query, records)
         self.logger.info(f"Inserted {len(records)} gene expression records.")
 
-    async def fetch_expressions(self) -> tuple[GeneExpression, ...]:
-        return tuple([r async for r in self._select_expressions(None)])
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
@@ -123,25 +121,6 @@ class Database(PgAsyncDatabase):
         for r in map(lambda g: self._deserialize_gene_expression(g), res):
             yield r
 
-    async def fetch_gene_expressions_by_experiment_id(self, experiment_result_id: str) -> Tuple[GeneExpression, ...]:
-        """
-        Fetch gene expressions for a specific experiment_result_id.
-        """
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            query = """
-            SELECT * FROM gene_expressions WHERE experiment_result_id = $1
-            """
-            res = await conn.fetch(query, experiment_result_id)
-        return tuple([self._deserialize_gene_expression(record) for record in res])
-
-    async def fetch_gene_expressions(self, experiments: list[str], method: str = "raw", paginate: bool = False) -> Tuple[Tuple[GeneExpression, ...], int]:
-        if not experiments:
-            return (), 0
-        # TODO: refactor this fetch_gene_expressions_by_experiment_id and implement pagination
-        experiment_result_id = experiments[0]
-        expressions = await self.fetch_gene_expressions_by_experiment_id(experiment_result_id)
-        return expressions, len(expressions)
 
     def _deserialize_gene_expression(self, rec: asyncpg.Record) -> GeneExpression:
         return GeneExpression(
