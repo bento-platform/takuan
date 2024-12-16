@@ -5,7 +5,7 @@ from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import GeneExpression, NormalizationAlgos
-from transcriptomics_data_service.scripts.normalize import (
+from transcriptomics_data_service.normalization_utils import (
     read_counts2tpm,
     tmm_normalization,
     getmm_normalization,
@@ -13,6 +13,8 @@ from transcriptomics_data_service.scripts.normalize import (
 
 __all__ = ["normalization_router"]
 
+
+REQUIRES_GENES_LENGHTS = [NormalizationAlgos.TPM, NormalizationAlgos.GETMM]
 
 normalization_router = APIRouter(prefix="/normalize")
 
@@ -22,17 +24,17 @@ normalization_router = APIRouter(prefix="/normalize")
     status_code=status.HTTP_200_OK,
 )
 async def normalize(
+    db: DatabaseDependency,
     experiment_result_id: str,
     method: NormalizationAlgos,
-    db: DatabaseDependency,
     gene_lengths_file: UploadFile = File(None),
 ):
     """
     Normalize gene expressions using the specified method for a given experiment_result_id.
     """
 
-    # load gene lengths
-    if method in [NormalizationAlgos.TPM, NormalizationAlgos.GETMM]:
+    # load gene lengths if required
+    if method in REQUIRES_GENES_LENGHTS:
         if gene_lengths_file is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -69,7 +71,7 @@ async def _load_gene_lengths(gene_lengths_file: UploadFile) -> pd.Series:
     return gene_lengths_series
 
 
-async def _fetch_raw_counts(db, experiment_result_id: str) -> pd.DataFrame:
+async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -> pd.DataFrame:
     """
     Fetch raw counts from the database for the given experiment_result_id.
     Returns a DataFrame with genes as rows and samples as columns.
@@ -104,7 +106,7 @@ def _align_gene_lengths(raw_counts_df: pd.DataFrame, gene_lengths: pd.Series):
 
 
 async def _update_normalized_values(
-    db, normalized_df: pd.DataFrame, experiment_result_id: str, method: NormalizationAlgos
+    db: DatabaseDependency, normalized_df: pd.DataFrame, experiment_result_id: str, method: NormalizationAlgos
 ):
     """
     Update the normalized values in the database

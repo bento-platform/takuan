@@ -1,7 +1,7 @@
 import pandas as pd
+import conorm
 
-
-def read_counts2tpm(counts_df, gene_lengths, scale_library=1e6, scale_length=1e3):
+def read_counts2tpm(counts_df: pd.DataFrame, gene_lengths: pd.Series, scale_library=1e6, scale_length=1e3):
     """
     Convert raw read counts to TPM (Transcripts Per Million).
 
@@ -32,7 +32,7 @@ def read_counts2tpm(counts_df, gene_lengths, scale_library=1e6, scale_length=1e3
     return tpm
 
 
-def tmm_normalization(counts_df):
+def tmm_normalization(counts_df: pd.DataFrame):
     """
     Perform TMM normalization on counts data.
 
@@ -42,16 +42,12 @@ def tmm_normalization(counts_df):
     Returns:
     DataFrame: TMM-normalized values.
     """
-    try:
-        import conorm
-    except ImportError:
-        raise ImportError("The 'conorm' package is required for this function but is not installed.")
     normalized_array = conorm.tmm(counts_df)
     normalized_df = pd.DataFrame(normalized_array, columns=counts_df.columns, index=counts_df.index)
     return normalized_df
 
 
-def getmm_normalization(counts_df, gene_lengths):
+def getmm_normalization(counts_df: pd.DataFrame, gene_lengths: pd.Series):
     """
     Perform GeTMM normalization on counts data.
 
@@ -62,11 +58,6 @@ def getmm_normalization(counts_df, gene_lengths):
     Returns:
     DataFrame: GeTMM-normalized values.
     """
-    try:
-        import conorm
-    except ImportError:
-        raise ImportError("The 'conorm' package is required for this function but is not installed.")
-
     normalized_array = conorm.getmm(counts_df, gene_lengths)
     normalized_df = pd.DataFrame(normalized_array, columns=counts_df.columns, index=counts_df.index)
     return normalized_df
