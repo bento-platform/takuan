@@ -1,8 +1,10 @@
+from enum import Enum
 from pydantic import BaseModel
 
 __all__ = [
     "ExperimentResult",
     "GeneExpression",
+    "NormalizationAlgos"
 ]
 
 
@@ -20,3 +22,10 @@ class GeneExpression(BaseModel):
     tpm_count: float | None = None
     tmm_count: float | None = None
     getmm_count: float | None = None
+
+
+class NormalizationAlgos(str, Enum):
+    # Constants for normalization methods
+    TPM = "tpm"
+    TMM = "tmm"
+    GETMM = "getmm"
