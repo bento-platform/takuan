@@ -62,45 +62,6 @@ async def get_expressions_handler(
     return GeneExpressionResponse(expressions=response_data, pagination=pagination_meta)
 
 
-@query_router.get(
-    "/expressions",
-    status_code=status.HTTP_200_OK,
-    response_model=GeneExpressionResponse,
-)
-async def get_expressions_all(
-    db: DatabaseDependency,
-    logger: LoggerDependency,
-    method: MethodEnum = Query(
-        MethodEnum.raw,
-        description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
-    ),
-    page: int = Query(
-        1,
-        ge=1,
-        description="Page number for pagination (must be greater than or equal to 1)",
-    ),
-    page_size: int = Query(
-        100,
-        ge=1,
-        le=1000,
-        description="Number of records per page (between 1 and 1000)",
-    ),
-):
-    """
-    Retrieve all gene expression data via GET request with pagination.
-    """
-    params = QueryParameters(
-        genes=None,
-        experiments=None,
-        sample_ids=None,
-        method=method,
-        page=page,
-        page_size=page_size,
-    )
-
-    return await get_expressions_handler(params, db, logger)
-
-
 @query_router.post(
     "/expressions",
     status_code=status.HTTP_200_OK,
