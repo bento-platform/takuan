@@ -63,7 +63,7 @@ async def get_expressions_handler(
 
 
 @query_router.get(
-    "/expressions_all",
+    "/expressions",
     status_code=status.HTTP_200_OK,
     response_model=GeneExpressionResponse,
 )
