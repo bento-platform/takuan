@@ -108,10 +108,10 @@ def tmm_normalization(counts_df, logratio_trim=0.3, sum_trim=0.05, weighting=Tru
     return normalized_data
 
 
-def getmm_normalization(counts_df, gene_lengths, logratio_trim=0.3, sum_trim=0.05, weighting=True, n_jobs=-1):
+def getmm_normalization(counts_df, gene_lengths, logratio_trim=0.3, sum_trim=0.05, scaling_factor=1e3, weighting=True, n_jobs=-1):
     """Perform GeTMM normalization on counts data."""
     counts_df, gene_lengths = prepare_counts_and_lengths(counts_df, gene_lengths)
-    rpk = counts_df.mul(1e3).div(gene_lengths, axis=0)
+    rpk = counts_df.mul(scaling_factor).div(gene_lengths, axis=0)
     return tmm_normalization(rpk, logratio_trim, sum_trim, weighting, n_jobs)
 
 
