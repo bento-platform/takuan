@@ -5,7 +5,6 @@ from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
     GeneExpressionData,
     GeneExpressionResponse,
-    PaginationMeta,
     MethodEnum,
     QueryParameters,
 )
@@ -52,14 +51,14 @@ async def get_expressions_handler(
         response_data.append(response_item)
 
     total_pages = (total_records + params.page_size - 1) // params.page_size
-    pagination_meta = PaginationMeta(
+
+    return GeneExpressionResponse(
+        expressions=response_data,
         total_records=total_records,
         page=params.page,
         page_size=params.page_size,
         total_pages=total_pages,
     )
-
-    return GeneExpressionResponse(expressions=response_data, pagination=pagination_meta)
 
 
 @query_router.post(

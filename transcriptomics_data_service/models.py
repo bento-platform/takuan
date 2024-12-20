@@ -13,6 +13,25 @@ __all__ = [
 ]
 
 
+class PaginatedRequest(BaseModel):
+    page: int = Field(
+        1,
+        ge=1,
+        description="Current page number"
+    )
+    page_size: int = Field(
+        100,
+        ge=1,
+        le=1000,
+        description="Number of records per page"
+    )
+
+
+class PaginatedResponse(PaginatedRequest):
+    total_records: int = Field(..., ge=0, description="Total number of records")
+    total_pages: int = Field(..., ge=1, description="Total number of pages")
+
+
 class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
     assembly_id: Optional[str] = Field(None, max_length=255)
@@ -37,16 +56,9 @@ class GeneExpressionData(BaseModel):
     method: str = Field(..., description="Method used to calculate the expression count")
 
 
-class PaginationMeta(BaseModel):
-    total_records: int = Field(..., ge=0, description="Total number of records")
-    page: int = Field(..., ge=1, description="Current page number")
-    page_size: int = Field(..., ge=1, le=1000, description="Number of records per page")
-    total_pages: int = Field(..., ge=1, description="Total number of pages")
 
-
-class GeneExpressionResponse(BaseModel):
+class GeneExpressionResponse(PaginatedResponse):
     expressions: List[GeneExpressionData]
-    pagination: PaginationMeta
 
 
 class MethodEnum(str, Enum):
@@ -56,22 +68,11 @@ class MethodEnum(str, Enum):
     getmm = "getmm"
 
 
-class QueryParameters(BaseModel):
+class QueryParameters(PaginatedRequest):
     genes: Optional[List[str]] = Field(None, description="List of gene codes to retrieve")
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
     method: MethodEnum = Field(MethodEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'")
-    page: int = Field(
-        1,
-        ge=1,
-        description="Page number for pagination (must be greater than or equal to 1)",
-    )
-    page_size: int = Field(
-        100,
-        ge=1,
-        le=1000,
-        description="Number of records per page (between 1 and 1000)",
-    )
 
     @validator("genes", "experiments", "sample_ids", each_item=True)
     def validate_identifiers(cls, value):
