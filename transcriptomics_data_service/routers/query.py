@@ -11,7 +11,6 @@ from transcriptomics_data_service.models import (
 
 query_router = APIRouter()
 
-
 async def get_expressions_handler(
     params: QueryParameters,
     db: DatabaseDependency,
