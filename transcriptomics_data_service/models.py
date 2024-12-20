@@ -14,17 +14,8 @@ __all__ = [
 
 
 class PaginatedRequest(BaseModel):
-    page: int = Field(
-        1,
-        ge=1,
-        description="Current page number"
-    )
-    page_size: int = Field(
-        100,
-        ge=1,
-        le=1000,
-        description="Number of records per page"
-    )
+    page: int = Field(1, ge=1, description="Current page number")
+    page_size: int = Field(100, ge=1, le=1000, description="Number of records per page")
 
 
 class PaginatedResponse(PaginatedRequest):
@@ -54,7 +45,6 @@ class GeneExpressionData(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="Experiment result ID")
     count: float = Field(..., description="Expression count")
     method: str = Field(..., description="Method used to calculate the expression count")
-
 
 
 class GeneExpressionResponse(PaginatedResponse):
