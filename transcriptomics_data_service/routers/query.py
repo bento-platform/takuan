@@ -10,7 +10,7 @@ from transcriptomics_data_service.models import (
     QueryParameters,
 )
 
-query_router = APIRouter(prefix="/query")
+query_router = APIRouter()
 
 
 async def get_expressions_handler(
