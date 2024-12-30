@@ -12,6 +12,11 @@ __all__ = [
     "QueryParameters",
 ]
 
+class MethodEnum(str, Enum):
+    raw = "raw"
+    tpm = "tpm"
+    tmm = "tmm"
+    getmm = "getmm"
 
 class PaginatedRequest(BaseModel):
     page: int = Field(1, ge=1, description="Current page number")
@@ -44,18 +49,11 @@ class GeneExpressionData(BaseModel):
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample ID")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="Experiment result ID")
     count: float = Field(..., description="Expression count")
-    method: str = Field(..., description="Method used to calculate the expression count")
+    method: MethodEnum = Field(..., description="Method used to calculate the expression count")
 
 
 class GeneExpressionResponse(PaginatedResponse):
     expressions: List[GeneExpressionData]
-
-
-class MethodEnum(str, Enum):
-    raw = "raw"
-    tpm = "tpm"
-    tmm = "tmm"
-    getmm = "getmm"
 
 
 class QueryParameters(PaginatedRequest):
