@@ -12,11 +12,13 @@ __all__ = [
     "ExpressionQueryBody",
 ]
 
+
 class MethodEnum(str, Enum):
     raw = "raw"
     tpm = "tpm"
     tmm = "tmm"
     getmm = "getmm"
+
 
 class PaginatedRequest(BaseModel):
     page: int = Field(1, ge=1, description="Current page number")
