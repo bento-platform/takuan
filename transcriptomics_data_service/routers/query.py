@@ -6,14 +6,14 @@ from transcriptomics_data_service.models import (
     GeneExpressionData,
     GeneExpressionResponse,
     MethodEnum,
-    QueryParameters,
+    ExpressionQueryBody,
 )
 
 query_router = APIRouter()
 
 
 async def get_expressions_handler(
-    params: QueryParameters,
+    params: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
@@ -67,7 +67,7 @@ async def get_expressions_handler(
     response_model=GeneExpressionResponse,
 )
 async def get_expressions_post(
-    params: QueryParameters,
+    params: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):

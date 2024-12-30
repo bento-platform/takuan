@@ -9,7 +9,7 @@ __all__ = [
     "PaginationMeta",
     "GeneExpressionResponse",
     "MethodEnum",
-    "QueryParameters",
+    "ExpressionQueryBody",
 ]
 
 class MethodEnum(str, Enum):
@@ -56,7 +56,7 @@ class GeneExpressionResponse(PaginatedResponse):
     expressions: List[GeneExpressionData]
 
 
-class QueryParameters(PaginatedRequest):
+class ExpressionQueryBody(PaginatedRequest):
     genes: Optional[List[str]] = Field(None, description="List of gene codes to retrieve")
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
