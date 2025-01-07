@@ -13,22 +13,22 @@ expressions_router = APIRouter(prefix="/expressions")
 
 
 async def get_expressions_handler(
-    params: ExpressionQueryBody,
+    query_body: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
     """
     Handler for fetching and returning gene expression data.
     """
-    logger.info(f"Received query parameters: {params}")
+    logger.info(f"Received query parameters: {query_body}")
 
     expressions, total_records = await db.fetch_gene_expressions(
-        genes=params.genes,
-        experiments=params.experiments,
-        sample_ids=params.sample_ids,
-        method=params.method.value,
-        page=params.page,
-        page_size=params.page_size,
+        genes=query_body.genes,
+        experiments=query_body.experiments,
+        sample_ids=query_body.sample_ids,
+        method=query_body.method.value,
+        page=query_body.page,
+        page_size=query_body.page_size,
     )
 
     if not expressions:
@@ -37,28 +37,29 @@ async def get_expressions_handler(
             detail="No gene expression data found for the given parameters.",
         )
 
-    response_data = []
-    method = params.method.value
-    method_count_field = f"{params.method.value}_count" if params.method != MethodEnum.raw else "raw_count"
-    for expr in expressions:
-        count = getattr(expr, method_count_field)
-        response_item = GeneExpressionData(
+    method = query_body.method.value
+    method_count_field = f"{method}_count"
+    response_data = [
+        GeneExpressionData(
             gene_code=expr.gene_code,
             sample_id=expr.sample_id,
             experiment_result_id=expr.experiment_result_id,
-            count=count,
-            method=method,
+            count=getattr(expr, method_count_field),
         )
-        response_data.append(response_item)
+        for expr in expressions
+    ]
 
-    total_pages = (total_records + params.page_size - 1) // params.page_size
+    total_pages = (total_records + query_body.page_size - 1) // query_body.page_size
 
     return GeneExpressionResponse(
-        expressions=response_data,
+        # pagination
+        page=query_body.page,
+        page_size=query_body.page_size,
         total_records=total_records,
-        page=params.page,
-        page_size=params.page_size,
         total_pages=total_pages,
+        # data
+        expressions=response_data,
+        query=query_body
     )
 
 

@@ -51,11 +51,6 @@ class GeneExpressionData(BaseModel):
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample ID")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="Experiment result ID")
     count: float = Field(..., description="Expression count")
-    method: MethodEnum = Field(..., description="Method used to calculate the expression count")
-
-
-class GeneExpressionResponse(PaginatedResponse):
-    expressions: List[GeneExpressionData]
 
 
 class ExpressionQueryBody(PaginatedRequest):
@@ -63,3 +58,8 @@ class ExpressionQueryBody(PaginatedRequest):
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
     method: MethodEnum = Field(MethodEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'")
+
+
+class GeneExpressionResponse(PaginatedResponse):
+    query: ExpressionQueryBody = Field(..., description="The query that produced this response")
+    expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
