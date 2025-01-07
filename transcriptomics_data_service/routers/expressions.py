@@ -5,7 +5,6 @@ from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
     GeneExpressionData,
     GeneExpressionResponse,
-    MethodEnum,
     ExpressionQueryBody,
 )
 
@@ -59,7 +58,7 @@ async def get_expressions_handler(
         total_pages=total_pages,
         # data
         expressions=response_data,
-        query=query_body
+        query=query_body,
     )
 
 
