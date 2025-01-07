@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Optional
 from enum import Enum
 
@@ -63,11 +63,3 @@ class ExpressionQueryBody(PaginatedRequest):
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
     method: MethodEnum = Field(MethodEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'")
-
-    @validator("genes", "experiments", "sample_ids", each_item=True)
-    def validate_identifiers(cls, value):
-        if not (1 <= len(value) <= 255):
-            raise ValueError("Each identifier must be between 1 and 255 characters long.")
-        if not value.replace("_", "").isalnum():
-            raise ValueError("Identifiers must contain only alphanumeric characters and underscores.")
-        return value
