@@ -3,22 +3,14 @@ import pandas as pd
 from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
-from transcriptomics_data_service.models import GeneExpression
-from transcriptomics_data_service.scripts.normalize import (
-    tpm_normalization,
-    tmm_normalization,
-    getmm_normalization,
-)
+from transcriptomics_data_service.models import CountTypesEnum, GeneExpression, NormalizationMethodEnum
+from transcriptomics_data_service.normalization_utils import getmm_normalization, tmm_normalization, tpm_normalization
 
-# Constants for normalization methods
-NORM_TPM = "tpm"
-NORM_TMM = "tmm"
-NORM_GETMM = "getmm"
-
-# List of all valid normalization methods
-VALID_METHODS = [NORM_TPM, NORM_TMM, NORM_GETMM]
 
 __all__ = ["normalization_router"]
+
+
+REQUIRES_GENES_LENGHTS = [NormalizationMethodEnum.tpm, NormalizationMethodEnum.getmm]
 
 normalization_router = APIRouter(prefix="/normalize")
 
@@ -28,22 +20,17 @@ normalization_router = APIRouter(prefix="/normalize")
     status_code=status.HTTP_200_OK,
 )
 async def normalize(
-    experiment_result_id: str,
-    method: str,
     db: DatabaseDependency,
+    experiment_result_id: str,
+    method: NormalizationMethodEnum,
     gene_lengths_file: UploadFile = File(None),
 ):
     """
     Normalize gene expressions using the specified method for a given experiment_result_id.
     """
-    # Method validation
-    if method.lower() not in VALID_METHODS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unsupported normalization method: {method}"
-        )
 
     # Load gene lengths if required
-    if method.lower() in [NORM_TPM, NORM_GETMM]:
+    if method.lower() in [NormalizationMethodEnum.tpm, NormalizationMethodEnum.getmm]:
         if gene_lengths_file is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -57,17 +44,17 @@ async def normalize(
     raw_counts_df = await _fetch_raw_counts(db, experiment_result_id)
 
     # Perform normalization
-    if method.lower() == NORM_TPM:
+    if method is NormalizationMethodEnum.tpm:
         raw_counts_df, gene_lengths_series = _align_gene_lengths(raw_counts_df, gene_lengths)
         normalized_df = tpm_normalization(raw_counts_df, gene_lengths_series)
-    elif method.lower() == NORM_TMM:
+    elif method is NormalizationMethodEnum.tmm:
         normalized_df = tmm_normalization(raw_counts_df)
-    elif method.lower() == NORM_GETMM:
+    elif method is NormalizationMethodEnum.getmm:
         raw_counts_df, gene_lengths_series = _align_gene_lengths(raw_counts_df, gene_lengths)
         normalized_df = getmm_normalization(raw_counts_df, gene_lengths_series)
 
     # Update database with normalized values
-    await _update_normalized_values(db, normalized_df, experiment_result_id, method=method.lower())
+    await _update_normalized_values(db, normalized_df, experiment_result_id, method)
 
     return {"message": f"{method.upper()} normalization completed successfully"}
 
@@ -88,7 +75,7 @@ async def _load_gene_lengths(gene_lengths_file: UploadFile) -> pd.Series:
     return gene_lengths_series
 
 
-async def _fetch_raw_counts(db, experiment_result_id: str) -> pd.DataFrame:
+async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -> pd.DataFrame:
     """
     Fetch raw counts from the database for the given experiment_result_id.
     Returns a DataFrame with genes as rows and samples as columns.
@@ -122,13 +109,15 @@ def _align_gene_lengths(raw_counts_df: pd.DataFrame, gene_lengths: pd.Series):
     return raw_counts_df, gene_lengths_series
 
 
-async def _update_normalized_values(db, normalized_df: pd.DataFrame, experiment_result_id: str, method: str):
+async def _update_normalized_values(
+    db: DatabaseDependency, normalized_df: pd.DataFrame, experiment_result_id: str, method: NormalizationMethodEnum
+):
     """
     Update the normalized values in the database.
     """
     # Fetch existing expressions to get raw_count values
     existing_expressions, _ = await db.fetch_gene_expressions(
-        experiments=[experiment_result_id], method="raw", paginate=False
+        experiments=[experiment_result_id], method=CountTypesEnum.raw, paginate=False
     )
     raw_count_dict = {(expr.gene_code, expr.sample_id): expr.raw_count for expr in existing_expressions}
 
@@ -154,9 +143,9 @@ async def _update_normalized_values(db, normalized_df: pd.DataFrame, experiment_
             sample_id=sample_id,
             experiment_result_id=experiment_result_id,
             raw_count=raw_count,
-            tpm_count=row["NormalizedValue"] if method == NORM_TPM else None,
-            tmm_count=row["NormalizedValue"] if method == NORM_TMM else None,
-            getmm_count=row["NormalizedValue"] if method == NORM_GETMM else None,
+            tpm_count=row["NormalizedValue"] if method == NormalizationMethodEnum.tpm else None,
+            tmm_count=row["NormalizedValue"] if method == NormalizationMethodEnum.tmm else None,
+            getmm_count=row["NormalizedValue"] if method == NormalizationMethodEnum.getmm else None,
         )
         expressions.append(gene_expression)
 

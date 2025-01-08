@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator, field_validator
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
 
@@ -6,18 +6,30 @@ __all__ = [
     "ExperimentResult",
     "GeneExpression",
     "GeneExpressionData",
-    "PaginationMeta",
     "GeneExpressionResponse",
-    "MethodEnum",
+    "NormalizationMethodEnum",
     "ExpressionQueryBody",
 ]
 
 
-class MethodEnum(str, Enum):
-    raw = "raw"
-    tpm = "tpm"
-    tmm = "tmm"
-    getmm = "getmm"
+TPM = "tpm"
+TMM = "tmm"
+GETMM = "getmm"
+RAW = "raw"
+
+
+class NormalizationMethodEnum(str, Enum):
+    tpm = TPM
+    tmm = TMM
+    getmm = GETMM
+
+
+class CountTypesEnum(str, Enum):
+    raw = RAW
+    # normalized counts
+    tpm = TPM
+    tmm = TMM
+    getmm = GETMM
 
 
 class PaginatedRequest(BaseModel):
@@ -57,7 +69,9 @@ class ExpressionQueryBody(PaginatedRequest):
     genes: Optional[List[str]] = Field(None, description="List of gene codes to retrieve")
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
-    method: MethodEnum = Field(MethodEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'")
+    method: CountTypesEnum = Field(
+        CountTypesEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'"
+    )
 
 
 class GeneExpressionResponse(PaginatedResponse):

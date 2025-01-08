@@ -7,15 +7,10 @@ from fastapi import Depends
 from functools import lru_cache
 from pathlib import Path
 
+
 from .config import Config, ConfigDependency
 from .logger import LoggerDependency
-from .models import ExperimentResult, GeneExpression
-
-NORM_METHOD_COLS = {
-    "tpm": "tpm_count",
-    "tmm": "tmm_count",
-    "getmm": "getmm_count",
-}
+from .models import CountTypesEnum, ExperimentResult, GeneExpression, NormalizationMethodEnum
 
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 
@@ -135,11 +130,11 @@ class Database(PgAsyncDatabase):
     # Normalization Methods
     ############################
 
-    async def update_normalized_expressions(self, expressions: List[GeneExpression], method: str):
+    async def update_normalized_expressions(self, expressions: List[GeneExpression], method: NormalizationMethodEnum):
         """
         Update the normalized expressions in the database using batch updates.
         """
-        column = NORM_METHOD_COLS.get(method)
+        column = f"{method.value}_count"
         if not column:
             raise ValueError(f"Unsupported normalization method: {method}")
         conn: asyncpg.Connection
@@ -157,7 +152,7 @@ class Database(PgAsyncDatabase):
             ]
 
             await conn.execute(
-                f"""
+                """
                 CREATE TEMPORARY TABLE temp_updates (
                     value DOUBLE PRECISION,
                     experiment_result_id VARCHAR(255),
@@ -199,7 +194,7 @@ class Database(PgAsyncDatabase):
         genes: Optional[List[str]] = None,
         experiments: Optional[List[str]] = None,
         sample_ids: Optional[List[str]] = None,
-        method: str = "raw",
+        method: CountTypesEnum = CountTypesEnum.raw,
         page: int = 1,
         page_size: int = 100,
         paginate: bool = True,
