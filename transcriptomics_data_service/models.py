@@ -42,10 +42,17 @@ class PaginatedResponse(PaginatedRequest):
     total_pages: int = Field(..., ge=1, description="Total number of pages")
 
 
+#####################################
+# EXPERIMENTS
+#####################################
 class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
     assembly_id: Optional[str] = Field(None, max_length=255)
     assembly_name: Optional[str] = Field(None, max_length=255)
+
+
+class SamplesResponse(PaginatedResponse):
+    samples: List[str]
 
 
 class GeneExpression(BaseModel):
