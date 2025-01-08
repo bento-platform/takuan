@@ -74,6 +74,41 @@ class Database(PgAsyncDatabase):
         await self._execute(*("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id))
         self.logger.info(f"Deleted experiment_result row {exp_id}")
 
+    ############################
+    # fetch experiment_results
+    ############################
+
+    async def fetch_experiment_results(
+        self,
+        paginate: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> Tuple[List[ExperimentResult], int]:
+
+        order_clause = " ORDER BY experiment_result_id"
+        base_query = "SELECT * FROM experiment_results"
+        count_query = "SELECT COUNT(*) FROM experiment_results"
+
+        async with self.connect() as conn:
+            total_records = await conn.fetchval(count_query)
+            query = base_query + order_clause
+            params = []
+            if paginate:
+                offset = (page - 1) * page_size
+                query += " LIMIT $1 OFFSET $2"
+                params = [page_size, offset]
+
+            rows = await conn.fetch(query, *params)
+
+        items = [
+            ExperimentResult(
+                experiment_result_id=r["experiment_result_id"],
+                assembly_id=r["assembly_id"],
+                assembly_name=r["assembly_name"],
+            )
+            for r in rows
+        ]
+        return items, total_records
     ########################
     # CRUD: gene_expressions
     ########################
