@@ -70,7 +70,8 @@ class ExpressionQueryBody(PaginatedRequest):
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
     method: CountTypesEnum = Field(
-        CountTypesEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'"
+        CountTypesEnum.raw,
+        description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
     )
 
 
