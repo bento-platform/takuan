@@ -143,6 +143,41 @@ class Database(PgAsyncDatabase):
 
             items = [r["sample_id"] for r in rows]
             return items, total_records
+
+    async def fetch_experiment_features(
+        self,
+        experiment_result_id: str,
+        paginate: bool = True,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Tuple[List[str], int]:
+        """
+        Returns (list_of_features, total_records) for a single experiment_result_id.
+        """
+        count_query = """
+            SELECT COUNT(DISTINCT gene_code)
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+        """
+        base_query = """
+            SELECT DISTINCT gene_code
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+            ORDER BY gene_code
+        """
+
+        async with self.connect() as conn:
+            total_records = await conn.fetchval(count_query, experiment_result_id)
+            if paginate:
+                offset = (page - 1) * page_size
+                query = base_query + " LIMIT $2 OFFSET $3"
+                rows = await conn.fetch(query, experiment_result_id, page_size, offset)
+            else:
+                rows = await conn.fetch(base_query, experiment_result_id)
+
+        items = [r["gene_code"] for r in rows]
+        return items, total_records
+
     ########################
     # CRUD: gene_expressions
     ########################
