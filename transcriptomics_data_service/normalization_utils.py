@@ -1,16 +1,16 @@
 import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
+from pandas.core.indexes.base import Index
 
-
-def filter_counts(counts_df):
+def filter_counts(counts_df: pd.DataFrame):
     """Filter out genes (rows) and samples (columns) with zero total counts."""
     row_filter = counts_df.sum(axis=1) > 0
     col_filter = counts_df.sum(axis=0) > 0
     return counts_df.loc[row_filter, col_filter]
 
 
-def prepare_counts_and_lengths(counts_df, gene_lengths, scale_length=None):
+def prepare_counts_and_lengths(counts_df: pd.DataFrame, gene_lengths: pd.Series, scale_length: float = None):
     """Align counts and gene_lengths, drop zeros, and optionally scale gene lengths."""
     counts_df = counts_df.loc[gene_lengths.index]
     valid_lengths = gene_lengths.replace(0, pd.NA).dropna()
@@ -21,7 +21,7 @@ def prepare_counts_and_lengths(counts_df, gene_lengths, scale_length=None):
     return filter_counts(counts_df), gene_lengths
 
 
-def parallel_apply(columns, func, n_jobs=-1):
+def parallel_apply(columns: Index, func, n_jobs=-1) -> pd.DataFrame:
     """Apply a function to each column in parallel and combine results."""
     results = Parallel(n_jobs=n_jobs)(delayed(func)(col) for col in columns)
     return pd.concat(results, axis=1)
@@ -48,7 +48,9 @@ def trim_values(log_ratio, log_mean, w, logratio_trim, sum_trim):
     return lr_t[final_idx], w_t[final_idx]
 
 
-def compute_TMM_normalization_factors(counts_df, logratio_trim=0.3, sum_trim=0.05, weighting=True, n_jobs=-1):
+def compute_TMM_normalization_factors(
+    counts_df: pd.DataFrame, logratio_trim=0.3, sum_trim=0.05, weighting=True, n_jobs=-1
+):
     """Compute TMM normalization factors for counts data."""
     lib_sizes = counts_df.sum(axis=0)
     median_lib = lib_sizes.median()
@@ -99,7 +101,7 @@ def compute_TMM_normalization_factors(counts_df, logratio_trim=0.3, sum_trim=0.0
     return norm_factors
 
 
-def tmm_normalization(counts_df, logratio_trim=0.3, sum_trim=0.05, weighting=True, n_jobs=-1):
+def tmm_normalization(counts_df: pd.DataFrame, logratio_trim=0.3, sum_trim=0.05, weighting=True, n_jobs=-1):
     """Perform TMM normalization on counts data."""
     counts_df = filter_counts(counts_df)
     norm_factors = compute_TMM_normalization_factors(counts_df, logratio_trim, sum_trim, weighting, n_jobs)
@@ -109,8 +111,8 @@ def tmm_normalization(counts_df, logratio_trim=0.3, sum_trim=0.05, weighting=Tru
 
 
 def getmm_normalization(
-    counts_df,
-    gene_lengths,
+    counts_df: pd.DataFrame,
+    gene_lengths: pd.Series,
     logratio_trim=0.3,
     sum_trim=0.05,
     scaling_factor=1e3,
@@ -123,7 +125,7 @@ def getmm_normalization(
     return tmm_normalization(rpk, logratio_trim, sum_trim, weighting, n_jobs)
 
 
-def compute_rpk(counts_df, gene_lengths_scaled, n_jobs=-1):
+def compute_rpk(counts_df: pd.DataFrame, gene_lengths_scaled: pd.Series, n_jobs=-1):
     """Compute RPK values in parallel."""
     columns = counts_df.columns
 
@@ -135,7 +137,7 @@ def compute_rpk(counts_df, gene_lengths_scaled, n_jobs=-1):
     return rpk
 
 
-def tpm_normalization(counts_df, gene_lengths, scale_library=1e6, scale_length=1e3, n_jobs=-1):
+def tpm_normalization(counts_df: pd.DataFrame, gene_lengths: pd.Series, scale_library=1e6, scale_length=1e3, n_jobs=-1):
     """Convert raw read counts to TPM in parallel."""
     counts_df, gene_lengths_scaled = prepare_counts_and_lengths(counts_df, gene_lengths, scale_length=scale_length)
     rpk = compute_rpk(counts_df, gene_lengths_scaled, n_jobs)

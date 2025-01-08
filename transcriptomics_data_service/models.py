@@ -41,7 +41,6 @@ class PaginatedResponse(PaginatedRequest):
     total_records: int = Field(..., ge=0, description="Total number of records")
     total_pages: int = Field(..., ge=1, description="Total number of pages")
 
-
 class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
     assembly_id: Optional[str] = Field(None, max_length=255)
@@ -49,13 +48,13 @@ class ExperimentResult(BaseModel):
 
 
 class GeneExpression(BaseModel):
-    gene_code: str = Field(..., min_length=1, max_length=255)
-    sample_id: str = Field(..., min_length=1, max_length=255)
-    experiment_result_id: str = Field(..., min_length=1, max_length=255)
-    raw_count: int
-    tpm_count: Optional[float] = None
-    tmm_count: Optional[float] = None
-    getmm_count: Optional[float] = None
+    gene_code: str = Field(..., min_length=1, max_length=255, description="Feature identifier")
+    sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
+    experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
+    raw_count: int = Field(..., ge=0, description="The raw count for the given feature")
+    tpm_count: Optional[float] = Field(None, ge=0, description="TPM normalized count")
+    tmm_count: Optional[float] = Field(None, ge=0, description="TMM normalized count")
+    getmm_count: Optional[float] = Field(None, ge=0, description="GETMM normalized count")
 
 
 class GeneExpressionData(BaseModel):

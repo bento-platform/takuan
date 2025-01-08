@@ -88,7 +88,9 @@ async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -
     Fetch raw counts from the database for the given experiment_result_id.
     Returns a DataFrame with genes as rows and samples as columns.
     """
-    expressions, _ = await db.fetch_gene_expressions(experiments=[experiment_result_id], method="raw", paginate=False)
+    expressions, _ = await db.fetch_gene_expressions(
+        experiments=[experiment_result_id], method=CountTypesEnum.raw, paginate=False
+    )
     if not expressions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment result not found.")
 
