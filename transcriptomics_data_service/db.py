@@ -266,19 +266,11 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query, *params)
 
         if mapping is GeneExpression:
-            expressions = [
-                GeneExpression(
-                    gene_code=record["gene_code"],
-                    sample_id=record["sample_id"],
-                    experiment_result_id=record["experiment_result_id"],
-                    raw_count=record["raw_count"],
-                    tpm_count=record["tpm_count"],
-                    tmm_count=record["tmm_count"],
-                    getmm_count=record["getmm_count"],
-                )
-                for record in res
-            ]
+            expressions = [self._deserialize_gene_expression(record) for record in res]
         else:
+            # For the /expressions endpoint
+            # Returns a lightweight representation of a GeneExpression as GeneExpressionData,
+            # which only contains the requested count type.
             count_col = f"{method.value}_count"
             expressions = [
                 GeneExpressionData(
