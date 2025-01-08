@@ -71,13 +71,13 @@ class FeaturesResponse(PaginatedResponse):
 # GENE EXPRESSIONS
 #####################################
 class GeneExpression(BaseModel):
-    gene_code: str = Field(..., min_length=1, max_length=255)
-    sample_id: str = Field(..., min_length=1, max_length=255)
-    experiment_result_id: str = Field(..., min_length=1, max_length=255)
-    raw_count: int
-    tpm_count: Optional[float] = None
-    tmm_count: Optional[float] = None
-    getmm_count: Optional[float] = None
+    gene_code: str = Field(..., min_length=1, max_length=255, description="Feature identifier")
+    sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
+    experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
+    raw_count: int = Field(..., ge=0, description="The raw count for the given feature")
+    tpm_count: Optional[float] = Field(None, ge=0, description="TPM normalized count")
+    tmm_count: Optional[float] = Field(None, ge=0, description="TMM normalized count")
+    getmm_count: Optional[float] = Field(None, ge=0, description="GETMM normalized count")
 
 
 class GeneExpressionData(BaseModel):
@@ -92,7 +92,8 @@ class ExpressionQueryBody(PaginatedRequest):
     experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
     method: CountTypesEnum = Field(
-        CountTypesEnum.raw, description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'"
+        CountTypesEnum.raw,
+        description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
     )
 
 

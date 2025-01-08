@@ -25,9 +25,10 @@ async def get_expressions_handler(
         genes=query_body.genes,
         experiments=query_body.experiments,
         sample_ids=query_body.sample_ids,
-        method=query_body.method.value,
+        method=query_body.method,
         page=query_body.page,
         page_size=query_body.page_size,
+        mapping=GeneExpressionData,
     )
 
     if not expressions:
@@ -35,18 +36,6 @@ async def get_expressions_handler(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No gene expression data found for the given parameters.",
         )
-
-    method = query_body.method.value
-    method_count_field = f"{method}_count"
-    response_data = [
-        GeneExpressionData(
-            gene_code=expr.gene_code,
-            sample_id=expr.sample_id,
-            experiment_result_id=expr.experiment_result_id,
-            count=getattr(expr, method_count_field),
-        )
-        for expr in expressions
-    ]
 
     total_pages = (total_records + query_body.page_size - 1) // query_body.page_size
 
@@ -57,7 +46,7 @@ async def get_expressions_handler(
         total_records=total_records,
         total_pages=total_pages,
         # data
-        expressions=response_data,
+        expressions=expressions,
         query=query_body,
     )
 

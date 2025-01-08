@@ -3,8 +3,16 @@ import pandas as pd
 from io import StringIO
 
 from transcriptomics_data_service.db import DatabaseDependency
-from transcriptomics_data_service.models import CountTypesEnum, GeneExpression, NormalizationMethodEnum
-from transcriptomics_data_service.normalization_utils import getmm_normalization, tmm_normalization, tpm_normalization
+from transcriptomics_data_service.models import (
+    CountTypesEnum,
+    GeneExpression,
+    NormalizationMethodEnum,
+)
+from transcriptomics_data_service.normalization_utils import (
+    getmm_normalization,
+    tmm_normalization,
+    tpm_normalization,
+)
 
 
 __all__ = ["normalization_router"]
@@ -80,13 +88,21 @@ async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -
     Fetch raw counts from the database for the given experiment_result_id.
     Returns a DataFrame with genes as rows and samples as columns.
     """
-    expressions, _ = await db.fetch_gene_expressions(experiments=[experiment_result_id], method="raw", paginate=False)
+    expressions, _ = await db.fetch_gene_expressions(
+        experiments=[experiment_result_id], method=CountTypesEnum.raw, paginate=False
+    )
     if not expressions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment result not found.")
 
     data = []
     for expr in expressions:
-        data.append({"GeneID": expr.gene_code, "SampleID": expr.sample_id, "RawCount": expr.raw_count})
+        data.append(
+            {
+                "GeneID": expr.gene_code,
+                "SampleID": expr.sample_id,
+                "RawCount": expr.raw_count,
+            }
+        )
     df = pd.DataFrame(data)
     raw_counts_df = df.pivot(index="GeneID", columns="SampleID", values="RawCount")
 
@@ -102,7 +118,8 @@ def _align_gene_lengths(raw_counts_df: pd.DataFrame, gene_lengths: pd.Series):
     common_genes = raw_counts_df.index.intersection(gene_lengths.index)
     if common_genes.empty:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No common genes between counts and gene lengths."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No common genes between counts and gene lengths.",
         )
     raw_counts_df = raw_counts_df.loc[common_genes]
     gene_lengths_series = gene_lengths.loc[common_genes]
@@ -110,7 +127,10 @@ def _align_gene_lengths(raw_counts_df: pd.DataFrame, gene_lengths: pd.Series):
 
 
 async def _update_normalized_values(
-    db: DatabaseDependency, normalized_df: pd.DataFrame, experiment_result_id: str, method: NormalizationMethodEnum
+    db: DatabaseDependency,
+    normalized_df: pd.DataFrame,
+    experiment_result_id: str,
+    method: NormalizationMethodEnum,
 ):
     """
     Update the normalized values in the database.

@@ -10,7 +10,13 @@ from pathlib import Path
 
 from .config import Config, ConfigDependency
 from .logger import LoggerDependency
-from .models import CountTypesEnum, ExperimentResult, GeneExpression, NormalizationMethodEnum
+from .models import (
+    CountTypesEnum,
+    ExperimentResult,
+    GeneExpression,
+    GeneExpressionData,
+    NormalizationMethodEnum,
+)
 
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 
@@ -34,7 +40,12 @@ class Database(PgAsyncDatabase):
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
         """
-        execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
+        execute_args = (
+            query,
+            exp.experiment_result_id,
+            exp.assembly_id,
+            exp.assembly_name,
+        )
         if transaction_conn is not None:
             # execute within transaction if a transaction_conn is passed
             await transaction_conn.execute(*execute_args)
@@ -48,7 +59,10 @@ class Database(PgAsyncDatabase):
     async def read_experiment_result(self, exp_id: str) -> ExperimentResult | None:
         conn: asyncpg.Connection
         async with self.connect() as conn:
-            res = await conn.fetchrow("SELECT * FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+            res = await conn.fetchrow(
+                "SELECT * FROM experiment_results WHERE experiment_result_id = $1",
+                exp_id,
+            )
 
         if res is None:
             return None
@@ -235,7 +249,6 @@ class Database(PgAsyncDatabase):
             raise ValueError(f"Unsupported normalization method: {method}")
         conn: asyncpg.Connection
         async with self.transaction_connection() as conn:
-
             # Prepare data for bulk update
             records = [
                 (
@@ -294,7 +307,8 @@ class Database(PgAsyncDatabase):
         page: int = 1,
         page_size: int = 100,
         paginate: bool = True,
-    ) -> Tuple[List[GeneExpression], int]:
+        mapping: GeneExpression | GeneExpressionData = GeneExpression,
+    ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
         """
         Fetch gene expressions based on genes, experiments, sample_ids, and method, with optional pagination.
         Returns a tuple of (expressions list, total_records count).
@@ -326,8 +340,8 @@ class Database(PgAsyncDatabase):
                 params.append(sample_ids)
                 param_counter += 1
 
-            if method != "raw":
-                conditions.append(f"{method}_count IS NOT NULL")
+            if method.value != "raw":
+                conditions.append(f"{method.value}_count IS NOT NULL")
 
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
@@ -347,18 +361,22 @@ class Database(PgAsyncDatabase):
 
             res = await conn.fetch(query, *params)
 
-        expressions = [
-            GeneExpression(
-                gene_code=record["gene_code"],
-                sample_id=record["sample_id"],
-                experiment_result_id=record["experiment_result_id"],
-                raw_count=record["raw_count"],
-                tpm_count=record["tpm_count"],
-                tmm_count=record["tmm_count"],
-                getmm_count=record["getmm_count"],
-            )
-            for record in res
-        ]
+        if mapping is GeneExpression:
+            expressions = [self._deserialize_gene_expression(record) for record in res]
+        else:
+            # For the /expressions endpoint
+            # Returns a lightweight representation of a GeneExpression as GeneExpressionData,
+            # which only contains the requested count type.
+            count_col = f"{method.value}_count"
+            expressions = [
+                GeneExpressionData(
+                    gene_code=record["gene_code"],
+                    sample_id=record["sample_id"],
+                    experiment_result_id=record["experiment_result_id"],
+                    count=record[count_col],
+                )
+                for record in res
+            ]
 
         return expressions, total_records
 
