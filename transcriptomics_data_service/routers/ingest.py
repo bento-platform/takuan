@@ -1,6 +1,5 @@
 from logging import Logger
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-import json
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from io import StringIO
 import pandas as pd
 
