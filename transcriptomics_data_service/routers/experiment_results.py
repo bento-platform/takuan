@@ -12,6 +12,7 @@ __all__ = ["experiment_router"]
 
 experiment_router = APIRouter(prefix="/experiment")
 
+
 async def get_experiment_samples_handler(
     experiment_result_id: str,
     params: PaginatedRequest,
@@ -94,9 +95,7 @@ async def get_experiment_result(db: DatabaseDependency, experiment_result_id: st
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/samples",
-    status_code=status.HTTP_200_OK,
-    response_model=SamplesResponse
+    "/{experiment_result_id}/samples", status_code=status.HTTP_200_OK, response_model=SamplesResponse
 )
 async def post_experiment_samples(
     experiment_result_id: str,
@@ -108,9 +107,7 @@ async def post_experiment_samples(
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/features",
-    status_code=status.HTTP_200_OK,
-    response_model=FeaturesResponse
+    "/{experiment_result_id}/features", status_code=status.HTTP_200_OK, response_model=FeaturesResponse
 )
 async def post_experiment_features(
     experiment_result_id: str,
