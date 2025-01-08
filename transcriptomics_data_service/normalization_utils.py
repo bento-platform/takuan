@@ -3,6 +3,7 @@ import numpy as np
 from joblib import Parallel, delayed
 from pandas.core.indexes.base import Index
 
+
 def filter_counts(counts_df: pd.DataFrame):
     """Filter out genes (rows) and samples (columns) with zero total counts."""
     row_filter = counts_df.sum(axis=1) > 0

@@ -41,6 +41,7 @@ class PaginatedResponse(PaginatedRequest):
     total_records: int = Field(..., ge=0, description="Total number of records")
     total_pages: int = Field(..., ge=1, description="Total number of pages")
 
+
 class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
     assembly_id: Optional[str] = Field(None, max_length=255)
