@@ -16,7 +16,7 @@ SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 
 
 def get_db_uri(config: Config) -> str:
-    return f"postgres://{config.db_user}:{config.db_password}@{config.db_host}:{config.db_port}/{config.db_port}"
+    return f"postgres://{config.db_user}:{config.db_password}@{config.db_host}:{config.db_port}/{config.db_name}"
 
 
 class Database(PgAsyncDatabase):

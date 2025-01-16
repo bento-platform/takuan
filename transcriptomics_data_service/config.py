@@ -23,6 +23,7 @@ class Config(BentoFastAPIBaseConfig):
     db_host: str = "tds-db"
     db_port: int = 5432
     db_user: str = "tds_user"
+    db_name: str = "tds"
     db_password: str  # Populated from secrets OR env variable
 
     # Allow extra configs from /tds/lib/.env for custom authz configuration

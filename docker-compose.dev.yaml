@@ -13,6 +13,7 @@ services:
       - DB_HOST=tds-db
       - DB_PORT=5432
       - DB_USER=tds_user
+      - DB_NAME=tds_db
       - DB_PASSWORD=tds_password
       - CORS_ORIGINS="*"
       - BENTO_AUTHZ_SERVICE_URL=""
