@@ -20,10 +20,13 @@ class Config(BentoFastAPIBaseConfig):
     service_description: str = "Transcriptomics data service for the Bento platform."
     service_url_base_path: str = "http://127.0.0.1:5000"  # Base path to construct URIs from
 
-    database_uri: str = "postgres://localhost:5432"
+    db_host: str = "tds-db"
+    db_port: int = 5432
+    db_user: str = "tds_user"
+    db_password: str    # Populated from secrets OR env variable
 
     # Allow extra configs from /tds/lib/.env for custom authz configuration
-    model_config = SettingsConfigDict(env_file="./lib/.env", extra="allow")
+    model_config = SettingsConfigDict(env_file="./lib/.env", secrets_dir="/run/secrets/" , extra="allow")
 
 
 @lru_cache()
