@@ -33,9 +33,7 @@ class Database(PgAsyncDatabase):
     ##########################
     # CRUD: experiment_results
     ##########################
-    async def create_experiment_result(
-        self, exp: ExperimentResult, transaction_conn: asyncpg.Connection | None = None
-    ):
+    async def create_experiment_result(self, exp: ExperimentResult, transaction_conn: asyncpg.Connection | None = None):
         query = """
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
@@ -85,17 +83,13 @@ class Database(PgAsyncDatabase):
         )
 
     async def delete_experiment_result(self, exp_id: str):
-        await self._execute(
-            *("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id)
-        )
+        await self._execute(*("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id))
         self.logger.info(f"Deleted experiment_result row {exp_id}")
 
     ########################
     # CRUD: gene_expressions
     ########################
-    async def create_gene_expressions(
-        self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection
-    ):
+    async def create_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
         """
         Creates rows on gene_expression as part of an Atomic transaction
         Rows on gene_expressions can only be created as part of an RCM ingestion.
@@ -104,9 +98,7 @@ class Database(PgAsyncDatabase):
         for gene_expression in expressions:
             await self._create_gene_expression(gene_expression, transaction_conn)
 
-    async def _create_gene_expression(
-        self, expression: GeneExpression, transaction_conn: asyncpg.Connection
-    ):
+    async def _create_gene_expression(self, expression: GeneExpression, transaction_conn: asyncpg.Connection):
         # Creates a row on gene_expressions within a transaction.
         query = """
         INSERT INTO gene_expressions (gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count)
@@ -122,16 +114,10 @@ class Database(PgAsyncDatabase):
             expression.tmm_count,
         )
 
-    async def fetch_expressions(
-        self, experiment_result_id: str | None = None
-    ) -> tuple[GeneExpression, ...]:
-        return tuple(
-            [r async for r in self._select_expressions(exp_id=experiment_result_id)]
-        )
+    async def fetch_expressions(self, experiment_result_id: str | None = None) -> tuple[GeneExpression, ...]:
+        return tuple([r async for r in self._select_expressions(exp_id=experiment_result_id)])
 
-    async def _select_expressions(
-        self, exp_id: str | None
-    ) -> AsyncIterator[GeneExpression]:
+    async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
         where_clause = "WHERE experiment_result_id = $1" if exp_id is not None else ""
         query = f"SELECT * FROM gene_expressions {where_clause}"
