@@ -15,11 +15,15 @@ from .models import ExperimentResult, GeneExpression
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 
 
+def get_db_uri(config: Config) -> str:
+    return f"postgres://{config.db_user}:{config.db_password}@{config.db_host}:{config.db_port}/{config.db_name}"
+
+
 class Database(PgAsyncDatabase):
     def __init__(self, config: Config, logger: logging.Logger):
         self._config = config
         self.logger = logger
-        super().__init__(config.database_uri, SCHEMA_PATH)
+        super().__init__(get_db_uri(config), SCHEMA_PATH)
 
     async def _execute(self, *args):
         conn: asyncpg.Connection

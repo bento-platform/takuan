@@ -6,6 +6,13 @@ on:
       - main
   pull_request:
 
+env:
+  DB_HOST: localhost
+  DB_PORT: 5432
+  DB_USER: postgres
+  DB_NAME: postgres
+  DB_PASSWORD: postgres
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -47,7 +54,6 @@ jobs:
           cp authz_plugins/api_key/example.env lib/.env
       - name: Test
         run: |
-          export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
           poetry run pytest -svv --cov=transcriptomics_data_service --cov-branch --cov-report xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
