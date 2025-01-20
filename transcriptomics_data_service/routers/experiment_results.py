@@ -25,10 +25,7 @@ async def get_experiment_samples_handler(
     logger.info(f"Received query parameters for samples: {params}")
 
     samples, total_records = await db.fetch_experiment_samples(
-        experiment_result_id=experiment_result_id,
-        paginate=True,
-        page=params.page,
-        page_size=params.page_size,
+        experiment_result_id=experiment_result_id, pagination=params
     )
 
     if not samples:
@@ -60,10 +57,7 @@ async def get_experiment_features_handler(
     logger.info(f"Received query parameters for features: {params}")
 
     features, total_records = await db.fetch_experiment_features(
-        experiment_result_id=experiment_result_id,
-        paginate=True,
-        page=params.page,
-        page_size=params.page_size,
+        experiment_result_id=experiment_result_id, pagination=params
     )
 
     if not features:
@@ -85,7 +79,7 @@ async def get_experiment_features_handler(
 
 @experiment_router.get("")
 async def get_all_experiments(db: DatabaseDependency):
-    experiments, _ = await db.fetch_experiment_results(paginate=False)
+    experiments, _ = await db.fetch_experiment_results(pagination=None)
     return experiments
 
 
