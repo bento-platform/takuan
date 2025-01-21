@@ -94,8 +94,8 @@ async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -
     if not expressions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment result not found.")
 
-    # TODO: this extra loop is not needed, Ill modify db.fetch_gene_expressions 
-    # so we can pass a lambda mapper to convert directly from DB records, 
+    # TODO: this extra loop is not needed, Ill modify db.fetch_gene_expressions
+    # so we can pass a lambda mapper to convert directly from DB records,
     # with no intermediate GeneExpression deserialization.
     data = []
     for expr in expressions:
