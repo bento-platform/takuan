@@ -10,9 +10,18 @@ from pathlib import Path
 
 from .config import Config, ConfigDependency
 from .logger import LoggerDependency
-from .models import ExperimentResult, GeneExpression, NormalizationAlgos
+from .models import (
+    CountTypesEnum,
+    ExperimentResult,
+    GeneExpression,
+    GeneExpressionData,
+    NormalizationMethodEnum,
+    PaginatedRequest,
+)
 
 SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
+
+DEFAULT_PAGINATION: PaginatedRequest = PaginatedRequest(page=1, page_size=100)
 
 
 class Database(PgAsyncDatabase):
@@ -34,7 +43,12 @@ class Database(PgAsyncDatabase):
         INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
         VALUES ($1, $2, $3)
         """
-        execute_args = (query, exp.experiment_result_id, exp.assembly_id, exp.assembly_name)
+        execute_args = (
+            query,
+            exp.experiment_result_id,
+            exp.assembly_id,
+            exp.assembly_name,
+        )
         if transaction_conn is not None:
             # execute within transaction if a transaction_conn is passed
             await transaction_conn.execute(*execute_args)
@@ -48,7 +62,10 @@ class Database(PgAsyncDatabase):
     async def read_experiment_result(self, exp_id: str) -> ExperimentResult | None:
         conn: asyncpg.Connection
         async with self.connect() as conn:
-            res = await conn.fetchrow("SELECT * FROM experiment_results WHERE experiment_result_id = $1", exp_id)
+            res = await conn.fetchrow(
+                "SELECT * FROM experiment_results WHERE experiment_result_id = $1",
+                exp_id,
+            )
 
         if res is None:
             return None
@@ -73,6 +90,100 @@ class Database(PgAsyncDatabase):
     async def delete_experiment_result(self, exp_id: str):
         await self._execute(*("DELETE FROM experiment_results WHERE experiment_result_id = $1", exp_id))
         self.logger.info(f"Deleted experiment_result row {exp_id}")
+
+    def _deserialize_experiment_result(self, record: asyncpg.Record) -> ExperimentResult:
+        return ExperimentResult(
+            experiment_result_id=record["experiment_result_id"],
+            assembly_id=record["assembly_id"],
+            assembly_name=record["assembly_name"],
+        )
+
+    ############################
+    # fetch experiment_results
+    ############################
+
+    def _paginated_query(
+        self, base_query: str, base_params: List, pagination: PaginatedRequest | None
+    ) -> Tuple[str, List]:
+        # Ignore if None
+        if pagination is None:
+            return base_query, base_params
+
+        # Parametrize pagination if provided
+        offset = (pagination.page - 1) * pagination.page_size
+
+        # take base query params into account, if provided
+        params = [*base_params]
+        params_count = len(params)
+        params.append(pagination.page_size)
+        params.append(offset)
+        query = f"{base_query.strip()} LIMIT ${params_count + 1} OFFSET ${params_count + 2}"
+        return query, params
+
+    async def fetch_experiment_results(
+        self,
+        pagination: PaginatedRequest | None = DEFAULT_PAGINATION,
+    ) -> Tuple[List[ExperimentResult], int]:
+        base_query = "SELECT * FROM experiment_results ORDER BY experiment_result_id"
+        count_query = "SELECT COUNT(*) FROM experiment_results"
+        async with self.connect() as conn:
+            total_records = await conn.fetchval(count_query)
+            query, params = self._paginated_query(base_query, [], pagination)
+            rows = await conn.fetch(query, *params)
+        items = [self._deserialize_experiment_result(r) for r in rows]
+        return items, total_records
+
+    async def fetch_experiment_samples(
+        self,
+        experiment_result_id: str,
+        pagination: PaginatedRequest | None = DEFAULT_PAGINATION,
+    ) -> Tuple[List[str], int]:
+        """
+        Returns (list_of_sample_ids, total_records) for a single experiment_result_id.
+        """
+        count_query = """
+            SELECT COUNT(DISTINCT sample_id)
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+        """
+        base_query = """
+            SELECT DISTINCT sample_id
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+            ORDER BY sample_id
+        """
+        async with self.connect() as conn:
+            total_records = await conn.fetchval(count_query, experiment_result_id)
+            query, params = self._paginated_query(base_query, [experiment_result_id], pagination)
+            rows = await conn.fetch(query, *params)
+        items = [r["sample_id"] for r in rows]
+        return items, total_records
+
+    async def fetch_experiment_features(
+        self, experiment_result_id: str, pagination: PaginatedRequest | None = DEFAULT_PAGINATION
+    ) -> Tuple[List[str], int]:
+        """
+        Returns (list_of_features, total_records) for a single experiment_result_id.
+        """
+        count_query = """
+            SELECT COUNT(DISTINCT gene_code)
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+        """
+        base_query = """
+            SELECT DISTINCT gene_code
+            FROM gene_expressions
+            WHERE experiment_result_id = $1
+            ORDER BY gene_code
+        """
+
+        async with self.connect() as conn:
+            total_records = await conn.fetchval(count_query, experiment_result_id)
+            query, params = self._paginated_query(base_query, [experiment_result_id], pagination)
+            rows = await conn.fetch(query, *params)
+
+        items = [r["gene_code"] for r in rows]
+        return items, total_records
 
     ########################
     # CRUD: gene_expressions
@@ -106,9 +217,6 @@ class Database(PgAsyncDatabase):
         await transaction_conn.executemany(query, records)
         self.logger.info(f"Inserted {len(records)} gene expression records.")
 
-    async def fetch_expressions(self) -> tuple[GeneExpression, ...]:
-        return tuple([r async for r in self._select_expressions(None)])
-
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
         where_clause = "WHERE experiment_result_id = $1" if exp_id is not None else ""
@@ -117,18 +225,6 @@ class Database(PgAsyncDatabase):
             res = await conn.fetch(query, *(exp_id,) if exp_id is not None else ())
         for r in map(lambda g: self._deserialize_gene_expression(g), res):
             yield r
-
-    async def fetch_gene_expressions_by_experiment_id(self, experiment_result_id: str) -> Tuple[GeneExpression, ...]:
-        """
-        Fetch gene expressions for a specific experiment_result_id.
-        """
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            query = """
-            SELECT * FROM gene_expressions WHERE experiment_result_id = $1
-            """
-            res = await conn.fetch(query, experiment_result_id)
-        return tuple([self._deserialize_gene_expression(record) for record in res])
 
     def _deserialize_gene_expression(self, rec: asyncpg.Record) -> GeneExpression:
         return GeneExpression(
@@ -145,7 +241,7 @@ class Database(PgAsyncDatabase):
     # Normalization Methods
     ############################
 
-    async def update_normalized_expressions(self, expressions: List[GeneExpression], method: NormalizationAlgos):
+    async def update_normalized_expressions(self, expressions: List[GeneExpression], method: NormalizationMethodEnum):
         """
         Update the normalized expressions in the database using batch updates.
         """
@@ -154,7 +250,6 @@ class Database(PgAsyncDatabase):
             raise ValueError(f"Unsupported normalization method: {method}")
         conn: asyncpg.Connection
         async with self.transaction_connection() as conn:
-
             # Prepare data for bulk update
             records = [
                 (
@@ -203,6 +298,85 @@ class Database(PgAsyncDatabase):
             async with conn.transaction():
                 # operations must be made using this connection for the transaction to apply
                 yield conn
+
+    async def fetch_gene_expressions(
+        self,
+        genes: List[str] | None = None,
+        experiments: List[str] | None = None,
+        sample_ids: List[str] | None = None,
+        method: CountTypesEnum = CountTypesEnum.raw,
+        pagination: PaginatedRequest | None = None,
+        # page: int = 1,
+        # page_size: int = 100,
+        # paginate: bool = True,
+        mapping: GeneExpression | GeneExpressionData = GeneExpression,
+    ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
+        """
+        Fetch gene expressions based on genes, experiments, sample_ids, and method, with optional pagination.
+        Returns a tuple of (expressions list, total_records count).
+        """
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            # Query builder
+            base_query = """
+                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
+                FROM gene_expressions
+                """
+            count_query = "SELECT COUNT(*) FROM gene_expressions"
+            conditions = []
+            params = []
+            param_counter = 1
+
+            if genes:
+                conditions.append(f"gene_code = ANY(${param_counter}::text[])")
+                params.append(genes)
+                param_counter += 1
+
+            if experiments:
+                conditions.append(f"experiment_result_id = ANY(${param_counter}::text[])")
+                params.append(experiments)
+                param_counter += 1
+
+            if sample_ids:
+                conditions.append(f"sample_id = ANY(${param_counter}::text[])")
+                params.append(sample_ids)
+                param_counter += 1
+
+            if method.value != "raw":
+                conditions.append(f"{method.value}_count IS NOT NULL")
+
+            where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+
+            order_clause = " ORDER BY gene_code, sample_id"
+
+            query = base_query + where_clause + order_clause
+            count_query += where_clause
+
+            # Fetch records count before adding pagination params
+            total_records = await conn.fetchval(count_query, *params)
+
+            # Prepare query and params if pagination is provided
+            paginated_query, paginated_params = self._paginated_query(query, params, pagination)
+            res = await conn.fetch(paginated_query, *paginated_params)
+
+        if mapping is GeneExpression:
+            expressions = [self._deserialize_gene_expression(record) for record in res]
+        else:
+            # For the /expressions endpoint
+            # Returns a lightweight representation of a GeneExpression as GeneExpressionData,
+            # which only contains the requested count type.
+            count_col = f"{method.value}_count"
+            expressions = [
+                GeneExpressionData(
+                    gene_code=record["gene_code"],
+                    sample_id=record["sample_id"],
+                    experiment_result_id=record["experiment_result_id"],
+                    count=record[count_col],
+                )
+                for record in res
+            ]
+
+        return expressions, total_records
 
 
 @lru_cache()
