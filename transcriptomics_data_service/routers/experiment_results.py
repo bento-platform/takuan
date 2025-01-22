@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
+from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
@@ -10,7 +11,7 @@ from transcriptomics_data_service.models import (
 
 __all__ = ["experiment_router"]
 
-experiment_router = APIRouter(prefix="/experiment")
+experiment_router = APIRouter(prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router())
 
 
 async def get_experiment_samples_handler(
@@ -83,7 +84,7 @@ async def get_all_experiments(db: DatabaseDependency):
     return experiments
 
 
-@experiment_router.get("/{experiment_result_id}")
+@experiment_router.get("/{experiment_result_id}", dependencies=authz_plugin.dep_authz_get_experiment_result())
 async def get_experiment_result(db: DatabaseDependency, experiment_result_id: str):
     return await db.read_experiment_result(experiment_result_id)
 

@@ -24,11 +24,15 @@ SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
 DEFAULT_PAGINATION: PaginatedRequest = PaginatedRequest(page=1, page_size=100)
 
 
+def get_db_uri(config: Config) -> str:
+    return f"postgres://{config.db_user}:{config.db_password}@{config.db_host}:{config.db_port}/{config.db_name}"
+
+
 class Database(PgAsyncDatabase):
     def __init__(self, config: Config, logger: logging.Logger):
         self._config = config
         self.logger = logger
-        super().__init__(config.database_uri, SCHEMA_PATH)
+        super().__init__(get_db_uri(config), SCHEMA_PATH)
 
     async def _execute(self, *args):
         conn: asyncpg.Connection
@@ -306,9 +310,6 @@ class Database(PgAsyncDatabase):
         sample_ids: List[str] | None = None,
         method: CountTypesEnum = CountTypesEnum.raw,
         pagination: PaginatedRequest | None = None,
-        # page: int = 1,
-        # page_size: int = 100,
-        # paginate: bool = True,
         mapping: GeneExpression | GeneExpressionData = GeneExpression,
     ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
         """

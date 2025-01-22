@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
+from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
@@ -8,7 +9,7 @@ from transcriptomics_data_service.models import (
     ExpressionQueryBody,
 )
 
-expressions_router = APIRouter(prefix="/expressions")
+expressions_router = APIRouter(prefix="/expressions", dependencies=authz_plugin.dep_expression_router())
 
 
 async def get_expressions_handler(

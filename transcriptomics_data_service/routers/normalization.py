@@ -89,7 +89,7 @@ async def _fetch_raw_counts(db: DatabaseDependency, experiment_result_id: str) -
     Returns a DataFrame with genes as rows and samples as columns.
     """
     expressions, _ = await db.fetch_gene_expressions(
-        experiments=[experiment_result_id], method=CountTypesEnum.raw, paginate=False
+        experiments=[experiment_result_id], method=CountTypesEnum.raw, pagination=None
     )
     if not expressions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment result not found.")
@@ -140,7 +140,7 @@ async def _update_normalized_values(
     """
     # Fetch existing expressions to get raw_count values
     existing_expressions, _ = await db.fetch_gene_expressions(
-        experiments=[experiment_result_id], method=CountTypesEnum.raw, paginate=False
+        experiments=[experiment_result_id], method=CountTypesEnum.raw, pagination=None
     )
     raw_count_dict = {(expr.gene_code, expr.sample_id): expr.raw_count for expr in existing_expressions}
 

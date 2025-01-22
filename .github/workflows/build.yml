@@ -1,4 +1,4 @@
-name: Build and push TDS image
+name: Docker Build
 on:
   release:
     types: [ published ]
