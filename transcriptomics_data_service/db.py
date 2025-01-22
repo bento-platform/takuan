@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, AsyncIterator, Callable, List, Tuple, Optional
+from typing import Annotated, AsyncIterator, List, Tuple
 import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
@@ -301,9 +301,9 @@ class Database(PgAsyncDatabase):
 
     async def fetch_gene_expressions(
         self,
-        genes: Optional[List[str]] = None,
-        experiments: Optional[List[str]] = None,
-        sample_ids: Optional[List[str]] = None,
+        genes: List[str] | None = None,
+        experiments: List[str] | None = None,
+        sample_ids: List[str] | None = None,
         method: CountTypesEnum = CountTypesEnum.raw,
         pagination: PaginatedRequest | None = None,
         # page: int = 1,

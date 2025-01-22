@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 from enum import Enum
 
 __all__ = [
@@ -55,8 +55,8 @@ class PaginatedResponse(PaginatedRequest):
 #####################################
 class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
-    assembly_id: Optional[str] = Field(None, max_length=255)
-    assembly_name: Optional[str] = Field(None, max_length=255)
+    assembly_id: str | None = Field(None, max_length=255)
+    assembly_name: str | None = Field(None, max_length=255)
 
 
 class SamplesResponse(PaginatedResponse):
@@ -75,9 +75,9 @@ class GeneExpression(BaseModel):
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
     raw_count: int = Field(..., ge=0, description="The raw count for the given feature")
-    tpm_count: Optional[float] = Field(None, ge=0, description="TPM normalized count")
-    tmm_count: Optional[float] = Field(None, ge=0, description="TMM normalized count")
-    getmm_count: Optional[float] = Field(None, ge=0, description="GETMM normalized count")
+    tpm_count: float | None = Field(None, ge=0, description="TPM normalized count")
+    tmm_count: float | None = Field(None, ge=0, description="TMM normalized count")
+    getmm_count: float | None = Field(None, ge=0, description="GETMM normalized count")
 
 
 class GeneExpressionData(BaseModel):
@@ -88,9 +88,9 @@ class GeneExpressionData(BaseModel):
 
 
 class ExpressionQueryBody(PaginatedRequest):
-    genes: Optional[List[str]] = Field(None, description="List of gene codes to retrieve")
-    experiments: Optional[List[str]] = Field(None, description="List of experiment result IDs to retrieve data from")
-    sample_ids: Optional[List[str]] = Field(None, description="List of sample IDs to retrieve data from")
+    genes: List[str] | None = Field(None, description="List of gene codes to retrieve")
+    experiments: List[str] | None = Field(None, description="List of experiment result IDs to retrieve data from")
+    sample_ids: List[str] | None = Field(None, description="List of sample IDs to retrieve data from")
     method: CountTypesEnum = Field(
         CountTypesEnum.raw,
         description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
