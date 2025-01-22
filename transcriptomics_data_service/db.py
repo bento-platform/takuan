@@ -305,9 +305,10 @@ class Database(PgAsyncDatabase):
         experiments: Optional[List[str]] = None,
         sample_ids: Optional[List[str]] = None,
         method: CountTypesEnum = CountTypesEnum.raw,
-        page: int = 1,
-        page_size: int = 100,
-        paginate: bool = True,
+        pagination: PaginatedRequest | None = None,
+        # page: int = 1,
+        # page_size: int = 100,
+        # paginate: bool = True,
         mapping: GeneExpression | GeneExpressionData = GeneExpression,
     ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
         """
@@ -352,15 +353,19 @@ class Database(PgAsyncDatabase):
             count_query += where_clause
 
             # Pagination
-            if paginate:
-                limit_offset_clause = f" LIMIT ${param_counter} OFFSET ${param_counter + 1}"
-                params.extend([page_size, (page - 1) * page_size])
-                query += limit_offset_clause
+            # if paginate:
+            #     limit_offset_clause = f" LIMIT ${param_counter} OFFSET ${param_counter + 1}"
+            #     params.extend([page_size, (page - 1) * page_size])
+            #     query += limit_offset_clause
 
-            total_records_params = params[:-2] if paginate else params
-            total_records = await conn.fetchval(count_query, *total_records_params)
+            # total_records_params = params[:-2] if paginate else params
+            # total_records = await conn.fetchval(count_query, *total_records_params)
 
-            res = await conn.fetch(query, *params)
+            # Fetch records count before adding pagination params
+            total_records = await conn.fetchval(count_query, *params)
+
+            paginated_query, paginated_params = self._paginated_query(query, params, pagination)
+            res = await conn.fetch(paginated_query, *paginated_params)
 
         if mapping is GeneExpression:
             expressions = [self._deserialize_gene_expression(record) for record in res]

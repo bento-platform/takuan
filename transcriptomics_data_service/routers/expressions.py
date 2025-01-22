@@ -26,8 +26,7 @@ async def get_expressions_handler(
         experiments=query_body.experiments,
         sample_ids=query_body.sample_ids,
         method=query_body.method,
-        page=query_body.page,
-        page_size=query_body.page_size,
+        pagination=query_body,  # ExpressionQueryBody extends the PaginatedRequest model
         mapping=GeneExpressionData,
     )
 
