@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, status
 import pandas as pd
 from io import StringIO
 
+from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import (
     CountTypesEnum,
@@ -26,6 +27,7 @@ normalization_router = APIRouter(prefix="/normalize")
 @normalization_router.post(
     "/{experiment_result_id}/{method}",
     status_code=status.HTTP_200_OK,
+    dependencies=authz_plugin.dep_authz_normalize()
 )
 async def normalize(
     db: DatabaseDependency,

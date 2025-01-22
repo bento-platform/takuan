@@ -55,6 +55,7 @@ async def get_expressions_handler(
     "",
     status_code=status.HTTP_200_OK,
     response_model=GeneExpressionResponse,
+    dependencies=authz_plugin.dep_authz_expressions_list()
 )
 async def get_expressions_post(
     params: ExpressionQueryBody,

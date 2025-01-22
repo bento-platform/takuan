@@ -82,7 +82,10 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
     def dep_experiment_result_router(self) -> Sequence[Depends]:
         # Require API key check on the experiment_result router
         return [self._dep_check_api_key()]
-
+    
+    def dep_authz_normalize(self):
+        return [self._dep_check_api_key()]
+    
     # NOTE: With an all-or-nothing authz mechanism like an API key,
     # we can place the authz checks at the router level to have a more concise module.
 

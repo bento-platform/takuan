@@ -99,3 +99,6 @@ class BaseAuthzMiddleware:
 
     def dep_authz_get_experiment_result(self) -> None | Sequence[Depends]:
         return None
+    
+    def dep_authz_list_experiment_results(self) -> None | Sequence[Depends]:
+        return None

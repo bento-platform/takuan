@@ -11,7 +11,9 @@ from transcriptomics_data_service.models import (
 
 __all__ = ["experiment_router"]
 
-experiment_router = APIRouter(prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router())
+experiment_router = APIRouter(
+    prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router()
+)
 
 
 async def get_experiment_samples_handler(
@@ -78,19 +80,27 @@ async def get_experiment_features_handler(
     )
 
 
-@experiment_router.get("")
+@experiment_router.get(
+    "", dependencies=authz_plugin.dep_authz_list_experiment_results()
+)
 async def get_all_experiments(db: DatabaseDependency):
     experiments, _ = await db.fetch_experiment_results(pagination=None)
     return experiments
 
 
-@experiment_router.get("/{experiment_result_id}", dependencies=authz_plugin.dep_authz_get_experiment_result())
+@experiment_router.get(
+    "/{experiment_result_id}",
+    dependencies=authz_plugin.dep_authz_get_experiment_result(),
+)
 async def get_experiment_result(db: DatabaseDependency, experiment_result_id: str):
     return await db.read_experiment_result(experiment_result_id)
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/samples", status_code=status.HTTP_200_OK, response_model=SamplesResponse
+    "/{experiment_result_id}/samples",
+    status_code=status.HTTP_200_OK,
+    response_model=SamplesResponse,
+    dependencies=authz_plugin.dep_authz_get_experiment_result(),
 )
 async def post_experiment_samples(
     experiment_result_id: str,
@@ -98,11 +108,16 @@ async def post_experiment_samples(
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
-    return await get_experiment_samples_handler(experiment_result_id, params, db, logger)
+    return await get_experiment_samples_handler(
+        experiment_result_id, params, db, logger
+    )
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/features", status_code=status.HTTP_200_OK, response_model=FeaturesResponse
+    "/{experiment_result_id}/features",
+    status_code=status.HTTP_200_OK,
+    response_model=FeaturesResponse,
+    dependencies=authz_plugin.dep_authz_get_experiment_result(),
 )
 async def post_experiment_features(
     experiment_result_id: str,
@@ -110,9 +125,14 @@ async def post_experiment_features(
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
-    return await get_experiment_features_handler(experiment_result_id, params, db, logger)
+    return await get_experiment_features_handler(
+        experiment_result_id, params, db, logger
+    )
 
 
-@experiment_router.delete("/{experiment_result_id}")
+@experiment_router.delete(
+    "/{experiment_result_id}",
+    dependencies=authz_plugin.dep_authz_delete_experiment_result(),
+)
 async def delete_experiment_result(db: DatabaseDependency, experiment_result_id: str):
     await db.delete_experiment_result(experiment_result_id)
