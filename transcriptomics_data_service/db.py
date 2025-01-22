@@ -352,18 +352,10 @@ class Database(PgAsyncDatabase):
             query = base_query + where_clause + order_clause
             count_query += where_clause
 
-            # Pagination
-            # if paginate:
-            #     limit_offset_clause = f" LIMIT ${param_counter} OFFSET ${param_counter + 1}"
-            #     params.extend([page_size, (page - 1) * page_size])
-            #     query += limit_offset_clause
-
-            # total_records_params = params[:-2] if paginate else params
-            # total_records = await conn.fetchval(count_query, *total_records_params)
-
             # Fetch records count before adding pagination params
             total_records = await conn.fetchval(count_query, *params)
 
+            # Prepare query and params if pagination is provided
             paginated_query, paginated_params = self._paginated_query(query, params, pagination)
             res = await conn.fetch(paginated_query, *paginated_params)
 
