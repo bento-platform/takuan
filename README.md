@@ -25,6 +25,10 @@ After following the instructions, 4 relevant files are produced for TDS:
 The count matrices can be ingested into TDS as is.
 The gene lengths file can be used as is to normalize ingested expressions.
 
+For testing purposes, this repository includes an RCM and gene lenghts file:
+- [rcm_file.csv](tests/data/rcm_file.csv)
+- [gene_lengths.csv](tests/data/gene_lengths.csv)
+
 ## Starting a standalone TDS
 
 Start the TDS server with a local PostgreSQL database for testing by running the following command.
