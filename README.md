@@ -11,7 +11,7 @@ The Transcriptomics Data Service (TDS) is intended to ingest, organize and query
 
 ## Synthetic data
 
-Synthetic transcriptomi data can be produced for TDS.
+Synthetic transcriptomics data can be produced for TDS.
 
 To do so, please follow the steps detailled in the [Bento Demo Dataset](https://github.com/bento-platform/bento_demo_dataset)
 repository.
