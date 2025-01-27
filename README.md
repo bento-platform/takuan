@@ -9,6 +9,26 @@
 
 The Transcriptomics Data Service (TDS) is intended to ingest, organize and query data from transcriptomics experiments through an API.
 
+## Synthetic data
+
+Synthetic transcriptomics data can be produced for TDS.
+
+To do so, please follow the steps detailled in the [Bento Demo Dataset](https://github.com/bento-platform/bento_demo_dataset)
+repository.
+
+After following the instructions, 4 relevant files are produced for TDS:
+- `counts_matrix_group_1.csv`
+- `counts_matrix_group_2.csv`
+- `counts_matrix_group_3.csv`
+- `gene_lengths.csv`
+
+The count matrices can be ingested into TDS as is.
+The gene lengths file can be used as is to normalize ingested expressions.
+
+For testing purposes, this repository includes an RCM and gene lenghts file:
+- [rcm_file.csv](tests/data/rcm_file.csv)
+- [gene_lengths.csv](tests/data/gene_lengths.csv)
+
 ## Starting a standalone TDS
 
 Start the TDS server with a local PostgreSQL database for testing by running the following command.
