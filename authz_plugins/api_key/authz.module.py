@@ -66,6 +66,8 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         """
 
         async def _inner(x_api_key: Annotated[str, Header()]):
+            if x_api_key is None:
+                raise HTTPException(status_code=401, detail="Unauthorized: missing API key")
             if x_api_key != self.api_key:
                 raise HTTPException(status_code=403, detail="Unauthorized: invalid API key")
 
@@ -83,7 +85,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
         # Require API key check on the experiment_result router
         return [self._dep_check_api_key()]
     
-    def dep_authz_normalize(self):
+    def dep_authz_normalize(self) -> Sequence[Depends]:
         return [self._dep_check_api_key()]
     
     # NOTE: With an all-or-nothing authz mechanism like an API key,
