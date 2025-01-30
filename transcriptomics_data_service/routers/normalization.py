@@ -25,9 +25,7 @@ normalization_router = APIRouter(prefix="/normalize")
 
 
 @normalization_router.post(
-    "/{experiment_result_id}/{method}",
-    status_code=status.HTTP_200_OK,
-    dependencies=authz_plugin.dep_authz_normalize()
+    "/{experiment_result_id}/{method}", status_code=status.HTTP_200_OK, dependencies=authz_plugin.dep_authz_normalize()
 )
 async def normalize(
     db: DatabaseDependency,

@@ -11,9 +11,7 @@ from transcriptomics_data_service.models import (
 
 __all__ = ["experiment_router"]
 
-experiment_router = APIRouter(
-    prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router()
-)
+experiment_router = APIRouter(prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router())
 
 
 async def get_experiment_samples_handler(
@@ -80,9 +78,7 @@ async def get_experiment_features_handler(
     )
 
 
-@experiment_router.get(
-    "", dependencies=authz_plugin.dep_authz_list_experiment_results()
-)
+@experiment_router.get("", dependencies=authz_plugin.dep_authz_list_experiment_results())
 async def get_all_experiments(db: DatabaseDependency):
     experiments, _ = await db.fetch_experiment_results(pagination=None)
     return experiments
@@ -108,9 +104,7 @@ async def post_experiment_samples(
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
-    return await get_experiment_samples_handler(
-        experiment_result_id, params, db, logger
-    )
+    return await get_experiment_samples_handler(experiment_result_id, params, db, logger)
 
 
 @experiment_router.post(
@@ -125,9 +119,7 @@ async def post_experiment_features(
     db: DatabaseDependency,
     logger: LoggerDependency,
 ):
-    return await get_experiment_features_handler(
-        experiment_result_id, params, db, logger
-    )
+    return await get_experiment_features_handler(experiment_result_id, params, db, logger)
 
 
 @experiment_router.delete(

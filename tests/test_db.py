@@ -57,7 +57,7 @@ async def test_gene_expression(db: Database, db_cleanup):
         await db.create_gene_expressions([TEST_GENE_EXPRESSION], conn)
 
     # read all
-    db_expressions, total_records  = await db.fetch_gene_expressions()
+    db_expressions, total_records = await db.fetch_gene_expressions()
     assert len(db_expressions) == total_records
     assert db_expressions[0] == TEST_GENE_EXPRESSION
 
