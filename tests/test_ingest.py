@@ -7,6 +7,7 @@ from transcriptomics_data_service.config import get_config
 from httpx._types import HeaderTypes
 
 from transcriptomics_data_service.logger import get_logger
+from transcriptomics_data_service.models import NormalizationMethodEnum
 
 
 config = get_config()
@@ -96,21 +97,32 @@ def test_ingest_invalid_csv(test_client, authz_headers, db_cleanup):
 
 
 def test_normalize_400(test_client: TestClient, db_cleanup):
-    response = test_client.post("/normalize/some-id")
+    exp_id_missing = "bad-id"
+    method = NormalizationMethodEnum.tpm.value
+    response = test_client.post(f"/normalize/{exp_id_missing}/{method}")
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_normalize_403(test_client: TestClient, authz_headers_bad, db_cleanup):
-    response = test_client.post("/normalize/some-id", headers=authz_headers_bad)
+    exp_id_missing = "bad-id"
+    method = NormalizationMethodEnum.tpm.value
+    response = test_client.post(f"/normalize/{exp_id_missing}/{method}", headers=authz_headers_bad)
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_normalize_200(test_client: TestClient, authz_headers, db_cleanup):
-    # TODO real tests in normalization PR
+def test_normalize_tpm(test_client: TestClient, authz_headers, db_cleanup):
+    response = _ingest_rcm_file(
+        test_client,
+        file_path=RCM_FILE_PATH,
+        headers=authz_headers,
+        **INGEST_ARGS,
+    )
+    exp_id = INGEST_ARGS["exp_id"]
     with open(f"{TEST_FILES_DIR}/gene_lengths.csv", "rb") as file:
-        response = test_client.post(
-            url="/normalize/some-id",
-            files=[("features_lengths_file", file)],
-            headers=authz_headers,
-        )
-    assert response.status_code == status.HTTP_200_OK
+        for method in NormalizationMethodEnum:
+            response = test_client.post(
+                url=f"/normalize/{exp_id}/{method.value}",
+                files=[("gene_lengths_file", file)],
+                headers=authz_headers,
+            )
+            assert response.status_code == status.HTTP_200_OK

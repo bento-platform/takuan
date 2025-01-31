@@ -57,12 +57,12 @@ async def test_gene_expression(db: Database, db_cleanup):
         await db.create_gene_expressions([TEST_GENE_EXPRESSION], conn)
 
     # read all
-    db_expressions = await db.fetch_expressions()
-    assert len(db_expressions) == 1
+    db_expressions, total_records = await db.fetch_gene_expressions()
+    assert len(db_expressions) == total_records
     assert db_expressions[0] == TEST_GENE_EXPRESSION
 
     # read by ExperimentResult ID
-    db_expressions = await db.fetch_expressions(experiment_result_id=TEST_EXPERIMENT_RESULT_ID)
+    db_expressions, total_records = await db.fetch_gene_expressions(experiments=[TEST_EXPERIMENT_RESULT_ID])
     assert db_expressions[0] == TEST_GENE_EXPRESSION
 
 
@@ -77,6 +77,6 @@ async def test_transaction(db: Database, db_cleanup):
         except Exception:
             assert True
     db_exp = await db.read_experiment_result(TEST_EXPERIMENT_RESULT_ID)
-    db_gene_expr = await db.fetch_expressions()
+    db_gene_expr, _ = await db.fetch_gene_expressions()
     assert db_exp is None
     assert len(db_gene_expr) == 0
