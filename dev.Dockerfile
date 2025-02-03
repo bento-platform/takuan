@@ -1,8 +1,12 @@
-FROM ghcr.io/bento-platform/bento_base_image:python-debian-2024.07.09
+FROM python:3.12
+
+ARG USERNAME=tds-user
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
 
 LABEL org.opencontainers.image.description="Local development image for the Transcriptomics Data Service."
 LABEL devcontainer.metadata='[{ \
-  "remoteUser": "bento_user", \
+  "remoteUser": ${USERNAME}, \
   "customizations": { \
     "vscode": { \
       "extensions": ["ms-python.python", "eamodio.gitlens", "ms-python.black-formatter"], \
@@ -10,6 +14,34 @@ LABEL devcontainer.metadata='[{ \
     } \
   } \
 }]'
+
+# SETUP NON-ROOT USER
+RUN groupadd --gid ${USER_GID} ${USERNAME} \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} ${USERNAME} \
+    && apt-get update -y \
+    && apt-get install -y sudo \
+    && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME}
+USER ${USERNAME}
+
+# Install dev utils
+RUN apt-get update -y; \
+    apt-get upgrade -y; \
+    apt-get install -y \
+            bash \
+            build-essential \
+            curl \
+            git \
+            gosu \
+            jq \
+            libpq-dev \
+            perl \
+            procps \
+            vim; \
+    rm -rf /var/lib/apt/lists/*; \
+    pip install --no-cache-dir -U pip; \
+    pip install --no-cache-dir poetry==1.8.5; \
+    pip install --no-cache-dir 'uvicorn[standard]>=0.34.0,<0.35'
 
 # FastAPI uses uvicorn for a development server as well
 RUN pip install --upgrade pip && pip install --no-cache-dir "uvicorn[standard]==0.30.1"
