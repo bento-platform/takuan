@@ -29,7 +29,6 @@ def _ingest_rcm_file(
             files=[("rcm_file", file)],
             headers=headers,
         )
-    logger.debug(res.json())
     return res
 
 
@@ -64,6 +63,16 @@ def test_ingest_authorized_duplicate(test_client, authz_headers, db_cleanup, db_
         headers=authz_headers,
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_ingest_404(test_client, authz_headers, db_cleanup):
+    # db_with_experiment fixture not included, targeted experiment doesn't exist
+    response = _ingest_rcm_file(
+        test_client,
+        file_path=RCM_FILE_PATH,
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_ingest_parser_error(test_client, authz_headers, db_cleanup, db_with_experiment):
