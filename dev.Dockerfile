@@ -1,12 +1,12 @@
-FROM python:3.12
+ARG PYTHON_VERSION=3.12
+ARG DEBIAN_VERSION=slim-bookworm
 
-ARG USERNAME=tds-user
-ARG USER_UID=1000
-ARG USER_GID=${USER_UID}
+FROM python:${PYTHON_VERSION}-${DEBIAN_VERSION}
 
+# LABELS
+LABEL Maintainer="Bento Project"
 LABEL org.opencontainers.image.description="Local development image for the Transcriptomics Data Service."
 LABEL devcontainer.metadata='[{ \
-  "remoteUser": ${USERNAME}, \
   "customizations": { \
     "vscode": { \
       "extensions": ["ms-python.python", "eamodio.gitlens", "ms-python.black-formatter"], \
@@ -15,16 +15,6 @@ LABEL devcontainer.metadata='[{ \
   } \
 }]'
 
-# SETUP NON-ROOT USER
-RUN groupadd --gid ${USER_GID} ${USERNAME} \
-    && useradd --uid ${USER_UID} --gid ${USER_GID} ${USERNAME} \
-    && apt-get update -y \
-    && apt-get install -y sudo \
-    && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
-    && chmod 0440 /etc/sudoers.d/${USERNAME}
-USER ${USERNAME}
-
-# Install dev utils
 RUN apt-get update -y; \
     apt-get upgrade -y; \
     apt-get install -y \
@@ -38,18 +28,19 @@ RUN apt-get update -y; \
             perl \
             procps \
             vim; \
-    rm -rf /var/lib/apt/lists/*; \
-    pip install --no-cache-dir -U pip; \
+    rm -rf /var/lib/apt/lists/*;
+
+RUN pip install --no-cache-dir -U pip; \
     pip install --no-cache-dir poetry==1.8.5; \
     pip install --no-cache-dir 'uvicorn[standard]>=0.34.0,<0.35'
 
-# FastAPI uses uvicorn for a development server as well
-RUN pip install --upgrade pip && pip install --no-cache-dir "uvicorn[standard]==0.30.1"
+# INIT DIRECTORIES
+RUN mkdir /tds /run/secrets
 WORKDIR /tds
 
 COPY pyproject.toml .
 COPY poetry.lock .
-
+COPY gosu_entrypoint.bash .
 COPY run.dev.bash .
 
 # Install production + development dependencies
@@ -58,8 +49,8 @@ COPY run.dev.bash .
 RUN poetry config virtualenvs.create false && \
     poetry --no-cache install --no-root
 
-# Tell the service that we're running a local development container
-ENV BENTO_CONTAINER_LOCAL=true
+RUN chmod +x ./*.bash
 
 # Don't copy in actual code, since it'll be mounted in via volume for development
+ENTRYPOINT [ "bash", "./gosu_entrypoint.bash" ]
 CMD [ "bash", "./run.dev.bash" ]

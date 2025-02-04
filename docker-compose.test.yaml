@@ -9,8 +9,8 @@ services:
     depends_on:
       - tds-db
     environment:
-      - BENTO_UID=${UID}
-      # - DATABASE_URI=postgres://tds_user:tds_password@tds-db:5432/tds_db
+      - TDS_USER_NAME=tds-user
+      - TDS_UID=${UID}
       - DB_HOST=tds-db
       - DB_PORT=5432
       - DB_USER=tds_user
