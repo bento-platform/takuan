@@ -12,7 +12,8 @@ LABEL devcontainer.metadata='[{ \
       "extensions": ["ms-python.python", "eamodio.gitlens", "ms-python.black-formatter"], \
       "settings": {"workspaceFolder": "/tds"} \
     } \
-  } \
+  }, \
+  "remoteUser": "tds" \
 }]'
 
 RUN apt-get update -y; \
