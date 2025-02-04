@@ -10,7 +10,11 @@ logger = get_logger(config)
 
 
 def test_create_experiment(test_client, authz_headers, db_cleanup):
-    response = test_client.post("/experiment", headers=authz_headers, data=TEST_EXPERIMENT_RESULT.model_dump_json())
+    response = test_client.post(
+        "/experiment",
+        headers=authz_headers,
+        data=TEST_EXPERIMENT_RESULT.model_dump_json(),
+    )
     assert response.status_code == status.HTTP_200_OK
 
 
@@ -24,7 +28,9 @@ def test_create_experiment_400(test_client, authz_headers, db_cleanup):
 
 def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
     response = test_client.post(
-        "/experiment", headers=authz_headers_bad, data=TEST_EXPERIMENT_RESULT.model_dump_json()
+        "/experiment",
+        headers=authz_headers_bad,
+        data=TEST_EXPERIMENT_RESULT.model_dump_json(),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
