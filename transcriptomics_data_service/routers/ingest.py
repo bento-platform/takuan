@@ -17,8 +17,7 @@ GENE_ID_KEY = "GeneID"
 
 
 @ingest_router.post(
-    # "/ingest/{experiment_result_id}",
-    "/experiment/{experiment_result_id}/ingest/",
+    "/experiment/{experiment_result_id}/ingest",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
