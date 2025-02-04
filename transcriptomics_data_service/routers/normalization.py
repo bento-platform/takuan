@@ -144,8 +144,10 @@ async def _update_normalized_values(
     )
     raw_count_dict = {(expr.gene_code, expr.sample_id): expr.raw_count for expr in existing_expressions}
 
-    normalized_df = normalized_df.reset_index().melt(
-        id_vars="GeneID", var_name="SampleID", value_name="NormalizedValue"
+    normalized_df = (
+        normalized_df.reset_index()
+        .melt(id_vars="GeneID", var_name="SampleID", value_name="NormalizedValue")
+        .dropna(subset=["NormalizedValue"])
     )
 
     expressions = []
