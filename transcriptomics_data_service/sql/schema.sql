@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS experiment_results (
     experiment_result_id VARCHAR(255) NOT NULL PRIMARY KEY,
     assembly_id VARCHAR(255),
-    assembly_name VARCHAR(255)
+    assembly_name VARCHAR(255),
+    extra_properties JSON
 );
 
 CREATE TABLE IF NOT EXISTS gene_expressions (
