@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
-from bento_lib.apps.fastapi import BentoFastAPI
+from urllib.parse import urlparse
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from transcriptomics_data_service.db import get_db
 from transcriptomics_data_service.routers.experiment_results import experiment_router
@@ -36,16 +37,38 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = BentoFastAPI(
-    authz_middleware=authz_plugin,
-    config=config_for_setup,
-    logger=logger_for_setup,
-    bento_extra_service_info=BENTO_SERVICE_INFO,
-    service_type=SERVICE_TYPE,
+app = FastAPI(
+    title=config_for_setup.service_name,
+    root_path=urlparse(config_for_setup.service_url_base_path).path,
+    docs_url=config_for_setup.service_docs_path,
+    openapi_url=config_for_setup.service_openapi_path,
     version=__version__,
     lifespan=lifespan,
     dependencies=authz_plugin.dep_app(),
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config_for_setup.cors_origins,
+    allow_credentials=True,
+    allow_headers=["Authorization", "Cache-Control"],
+    allow_methods=["*"]
+)
+
+# Add authz middleware if AUTHZ_ENABLED
+if config_for_setup.authz_enabled:
+    authz_plugin.attach(app)
+
+# app = BentoFastAPI(
+#     authz_middleware=authz_plugin,
+#     config=config_for_setup,
+#     logger=logger_for_setup,
+#     bento_extra_service_info=BENTO_SERVICE_INFO,
+#     service_type=SERVICE_TYPE,
+#     version=__version__,
+#     lifespan=lifespan,
+#     dependencies=authz_plugin.dep_app(),
+# )
 
 app.include_router(ingest_router)
 app.include_router(experiment_router)

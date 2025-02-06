@@ -21,9 +21,10 @@ def test_get_experiment(test_client, authz_headers, db_with_experiment, db_clean
 
 
 # EMPTY DB
-def test_get_experiment_400(test_client):
+def test_get_experiment_400(test_client, db_with_experiment, db_cleanup):
     # Missing api-key
     response = test_client.get("/experiment/non-existant")
+    print(response)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -34,9 +35,10 @@ def test_get_experiment_200_empty(test_client, authz_headers):
     assert response.json() is None
 
 
-def test_delete_experiment_400(test_client):
+def test_delete_experiment_400(test_client, db_with_experiment, db_cleanup):
     # Missing api-key
     response = test_client.delete("/experiment/non-existant")
+    print(response)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 

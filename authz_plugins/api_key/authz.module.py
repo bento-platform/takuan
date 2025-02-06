@@ -29,7 +29,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
 
     def __init__(self, config: Config, logger: Logger) -> None:
         super().__init__()
-        self.enabled = config.bento_authz_enabled
+        self.enabled = config.authz_enabled
         self.logger = logger
 
         # Load the api_key from the config's extras

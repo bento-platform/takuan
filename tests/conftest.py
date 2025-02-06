@@ -10,10 +10,8 @@ from tests.test_db import TEST_EXPERIMENT_RESULT
 from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
 
-os.environ["BENTO_DEBUG"] = "true"
-os.environ["BENTO_VALIDATE_SSL"] = "false"
 os.environ["CORS_ORIGINS"] = "*"
-os.environ["BENTO_AUTHZ_SERVICE_URL"] = "https://authz.local"
+os.environ["AUTHZ_ENABLED"] = "True"
 
 from transcriptomics_data_service.config import Config, get_config
 from transcriptomics_data_service.main import app

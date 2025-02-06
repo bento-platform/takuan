@@ -16,7 +16,7 @@ services:
       - DB_NAME=tds_db
       - DB_PASSWORD=tds_password
       - CORS_ORIGINS="*"
-      - BENTO_AUTHZ_SERVICE_URL=""
+      - AUTHZ_ENABLED=True
     volumes:
       - $PWD:/tds     # mounts local repository
     ports:
