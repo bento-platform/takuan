@@ -57,6 +57,7 @@ class ExperimentResult(BaseModel):
     experiment_result_id: str = Field(..., min_length=1, max_length=255)
     assembly_id: str | None = Field(None, max_length=255)
     assembly_name: str | None = Field(None, max_length=255)
+    extra_properties: dict | None = Field(None)
 
 
 class SamplesResponse(PaginatedResponse):

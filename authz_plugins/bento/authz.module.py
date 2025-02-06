@@ -64,6 +64,9 @@ class BentoAuthzMiddleware(FastApiAuthMiddleware, BaseAuthzMiddleware):
 
     # EXPERIMENT RESULT router paths
 
+    def dep_authz_create_experiment_result(self):
+        return [self._dep_require_permission_injected_resource(P_INGEST_DATA)]
+
     def dep_authz_get_experiment_result(self):
         return [self._dep_require_permission_injected_resource(P_QUERY_DATA)]
 

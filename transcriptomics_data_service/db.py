@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Annotated, AsyncIterator, List, Tuple
 import asyncpg
@@ -44,14 +45,15 @@ class Database(PgAsyncDatabase):
     ##########################
     async def create_experiment_result(self, exp: ExperimentResult, transaction_conn: asyncpg.Connection | None = None):
         query = """
-        INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name)
-        VALUES ($1, $2, $3)
+        INSERT INTO experiment_results (experiment_result_id, assembly_id, assembly_name, extra_properties)
+        VALUES ($1, $2, $3, $4)
         """
         execute_args = (
             query,
             exp.experiment_result_id,
             exp.assembly_id,
             exp.assembly_name,
+            json.dumps(exp.extra_properties),
         )
         if transaction_conn is not None:
             # execute within transaction if a transaction_conn is passed
@@ -74,11 +76,12 @@ class Database(PgAsyncDatabase):
         if res is None:
             return None
 
-        self.logger.debug(f"READ experiment_results ID={exp_id}")
+        extra_props = json.loads(res["extra_properties"]) if res["extra_properties"] else None
         return ExperimentResult(
             experiment_result_id=res["experiment_result_id"],
             assembly_name=res["assembly_name"],
             assembly_id=res["assembly_id"],
+            extra_properties=extra_props,
         )
 
     async def update_experiment_result(self, exp: ExperimentResult):
@@ -96,10 +99,12 @@ class Database(PgAsyncDatabase):
         self.logger.info(f"Deleted experiment_result row {exp_id}")
 
     def _deserialize_experiment_result(self, record: asyncpg.Record) -> ExperimentResult:
+        extra_props = json.loads(record["extra_properties"]) if record["extra_properties"] else None
         return ExperimentResult(
             experiment_result_id=record["experiment_result_id"],
             assembly_id=record["assembly_id"],
             assembly_name=record["assembly_name"],
+            extra_properties=extra_props,
         )
 
     ############################

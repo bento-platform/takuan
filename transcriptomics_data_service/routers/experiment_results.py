@@ -4,6 +4,7 @@ from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
+    ExperimentResult,
     PaginatedRequest,
     SamplesResponse,
     FeaturesResponse,
@@ -76,6 +77,16 @@ async def get_experiment_features_handler(
         total_pages=total_pages,
         features=features,
     )
+
+
+@experiment_router.post(
+    "",
+    status_code=status.HTTP_200_OK,
+    dependencies=authz_plugin.dep_authz_create_experiment_result(),
+)
+async def create_experiment(db: DatabaseDependency, logger: LoggerDependency, exp: ExperimentResult):
+    await db.create_experiment_result(exp)
+    logger.info(f"Created experiment row with ID: {exp.experiment_result_id}")
 
 
 @experiment_router.get("", dependencies=authz_plugin.dep_authz_list_experiment_results())
