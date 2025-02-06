@@ -94,6 +94,10 @@ class BaseAuthzMiddleware:
         return None
 
     ###### EXPERIMENT RESULTS router paths
+
+    def dep_authz_create_experiment_result(self) -> None | Sequence[Depends]:
+        return None
+
     def dep_authz_delete_experiment_result(self) -> None | Sequence[Depends]:
         return None
 

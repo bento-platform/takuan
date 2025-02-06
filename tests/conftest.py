@@ -55,6 +55,7 @@ async def db_cleanup(db: Database):
 @pytest_asyncio.fixture
 async def db_with_experiment(db: Database):
     await db.create_experiment_result(TEST_EXPERIMENT_RESULT)
+    return TEST_EXPERIMENT_RESULT
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
 from fastapi import status
+import pytest
 
 from tests.test_db import TEST_EXPERIMENT_RESULT
 from transcriptomics_data_service.config import get_config
@@ -7,6 +8,39 @@ from transcriptomics_data_service.models import ExperimentResult
 
 config = get_config()
 logger = get_logger(config)
+
+TEST_EXPERIMENT_RESULT_NO_EXTRA = ExperimentResult(
+    experiment_result_id="12345",
+    assembly_id="assembly_test_id",
+    assembly_name="assembly_test_name",
+)
+
+
+@pytest.mark.parametrize("exp", [TEST_EXPERIMENT_RESULT, TEST_EXPERIMENT_RESULT_NO_EXTRA])
+def test_create_experiment(exp, test_client, authz_headers, db_cleanup):
+    response = test_client.post(
+        "/experiment",
+        headers=authz_headers,
+        data=exp.model_dump_json(),
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_create_experiment_400(test_client, authz_headers, db_cleanup):
+    response = test_client.post(
+        "/experiment",
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
+    response = test_client.post(
+        "/experiment",
+        headers=authz_headers_bad,
+        data=TEST_EXPERIMENT_RESULT.model_dump_json(),
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_get_experiment(test_client, authz_headers, db_with_experiment, db_cleanup):

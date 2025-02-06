@@ -7,6 +7,7 @@ TEST_EXPERIMENT_RESULT = ExperimentResult(
     experiment_result_id=TEST_EXPERIMENT_RESULT_ID,
     assembly_id="assembly_test_id",
     assembly_name="assembly_test_name",
+    extra_properties={"project": "project-a", "dataset": "dataset-b"},
 )
 TEST_GENE_EXPRESSION = GeneExpression(
     experiment_result_id=TEST_EXPERIMENT_RESULT_ID,

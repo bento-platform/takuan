@@ -5,7 +5,7 @@ import pandas as pd
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
-from transcriptomics_data_service.models import ExperimentResult, GeneExpression
+from transcriptomics_data_service.models import GeneExpression
 from transcriptomics_data_service.authz.plugin import authz_plugin
 
 __all__ = ["ingest_router"]
@@ -17,32 +17,31 @@ GENE_ID_KEY = "GeneID"
 
 
 @ingest_router.post(
-    "/ingest/{experiment_result_id}/assembly-name/{assembly_name}/assembly-id/{assembly_id}",
+    "/experiment/{experiment_result_id}/ingest",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
+    description="Ingest a raw counts matrix RCM into an existing experiment",
 )
 async def ingest(
     db: DatabaseDependency,
     logger: LoggerDependency,
     experiment_result_id: str,
-    assembly_name: str,
-    assembly_id: str,
     rcm_file: UploadFile = File(...),
 ):
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
     rcm_df = _load_csv(file_bytes, logger)
 
+    experiment_result = await db.read_experiment_result(experiment_result_id)
+    if experiment_result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No experiment result found for provided ID",
+        )
+
     # Handling ingestion as a transactional operation
     async with db.transaction_connection() as transaction_con:
-        experiment_result = ExperimentResult(
-            experiment_result_id=experiment_result_id,
-            assembly_name=assembly_name,
-            assembly_id=assembly_id,
-        )
-        await db.create_experiment_result(experiment_result, transaction_con)
-
         gene_expressions: list[GeneExpression] = [
             GeneExpression(
                 gene_code=gene_code,
