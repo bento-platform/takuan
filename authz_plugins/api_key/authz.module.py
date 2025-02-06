@@ -73,10 +73,6 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
 
         return Depends(_inner)
 
-    def dep_ingest_router(self) -> Sequence[Depends]:
-        # Require API key check on the ingest router
-        return [self._dep_check_api_key()]
-
     def dep_expression_router(self) -> Sequence[Depends]:
         # Require API key check on the expressions router
         return [self._dep_check_api_key()]

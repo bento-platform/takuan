@@ -5,14 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from transcriptomics_data_service.db import get_db
 from transcriptomics_data_service.routers.experiment_results import experiment_router
-from transcriptomics_data_service.routers.ingest import ingest_router
 from transcriptomics_data_service.routers.normalization import normalization_router
 from transcriptomics_data_service.routers.expressions import expressions_router
 from transcriptomics_data_service.authz.plugin import authz_plugin
+from transcriptomics_data_service.service_info import ServiceInfoDependency
 
 from . import __version__
 from .config import get_config
-from .constants import BENTO_SERVICE_KIND, SERVICE_TYPE
+from .constants import BENTO_SERVICE_KIND
 from .logger import get_logger
 
 # TODO should probably be mounted as a JSON for usage outside Bento
@@ -52,25 +52,18 @@ app.add_middleware(
     allow_origins=config_for_setup.cors_origins,
     allow_credentials=True,
     allow_headers=["Authorization", "Cache-Control"],
-    allow_methods=["*"]
+    allow_methods=["*"],
 )
 
 # Add authz middleware if AUTHZ_ENABLED
 if config_for_setup.authz_enabled:
     authz_plugin.attach(app)
 
-# app = BentoFastAPI(
-#     authz_middleware=authz_plugin,
-#     config=config_for_setup,
-#     logger=logger_for_setup,
-#     bento_extra_service_info=BENTO_SERVICE_INFO,
-#     service_type=SERVICE_TYPE,
-#     version=__version__,
-#     lifespan=lifespan,
-#     dependencies=authz_plugin.dep_app(),
-# )
-
-app.include_router(ingest_router)
 app.include_router(experiment_router)
 app.include_router(normalization_router)
 app.include_router(expressions_router)
+
+
+@app.get("/service-info")
+def get_service_info(service_info: ServiceInfoDependency):
+    return service_info

@@ -65,10 +65,18 @@ def test_client(db: Database):
 
 @pytest.fixture
 def authz_headers(config) -> HeaderTypes:
+    # Valid authz header from the config
     api_key = config.model_extra.get("api_key")
     return {"x-api-key": api_key}
 
 
 @pytest.fixture
 def authz_headers_bad() -> HeaderTypes:
+    # Invalid authz header: 403 wrong API key
     return {"x-api-key": "bad key"}
+
+
+@pytest.fixture
+def authz_headers_empty() -> HeaderTypes:
+    # Invalid authz header: 400 missing header value
+    return {"x-api-key": ""}

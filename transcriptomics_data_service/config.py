@@ -15,14 +15,13 @@ __all__ = [
 
 LogLevelLiteral = Literal["debug", "info", "warning", "error"]
 
+
 class Config(BaseSettings):
     # Service Info
     service_id: str = f"{SERVICE_GROUP}:{SERVICE_ARTIFACT}"
     service_name: str = "Transcriptomics Data Service"
     service_description: str = "Transcriptomics data service for the Bento platform."
-    service_url_base_path: str = (
-        "http://127.0.0.1:5000"  # Base path to construct URIs from
-    )
+    service_url_base_path: str = "http://127.0.0.1:5000"  # Base path to construct URIs from
     service_docs_path: str = "/docs"
     service_openapi_path: str = "/openapi.json"
 
@@ -41,10 +40,10 @@ class Config(BaseSettings):
     authz_enabled: bool = False
 
     model_config = SettingsConfigDict(
-        env_file="./lib/.env",          # authz plugin extra configs
-        secrets_dir="/run/secrets/",    # Docker secrets directory
+        env_file="./lib/.env",  # authz plugin extra configs
+        secrets_dir="/run/secrets/",  # Docker secrets directory
         extra="allow",
-        frozen=True
+        frozen=True,
     )
 
     @classmethod

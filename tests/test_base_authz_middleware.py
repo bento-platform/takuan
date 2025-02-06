@@ -20,6 +20,5 @@ def test_base_authz_middleware():
     except NotImplementedError:
         assert True
 
-    assert middleware.dep_ingest_router() is None
     assert middleware.dep_expression_router() is None
     assert middleware.dep_experiment_result_router() is None
