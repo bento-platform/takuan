@@ -1,23 +1,47 @@
-FROM ghcr.io/bento-platform/bento_base_image:python-debian-2024.07.09
+ARG PYTHON_VERSION=3.12
+ARG DEBIAN_VERSION=slim-bookworm
 
+FROM python:${PYTHON_VERSION}-${DEBIAN_VERSION}
+
+# LABELS
+LABEL Maintainer="Bento Project"
 LABEL org.opencontainers.image.description="Local development image for the Transcriptomics Data Service."
 LABEL devcontainer.metadata='[{ \
-  "remoteUser": "bento_user", \
   "customizations": { \
     "vscode": { \
       "extensions": ["ms-python.python", "eamodio.gitlens", "ms-python.black-formatter"], \
       "settings": {"workspaceFolder": "/tds"} \
     } \
-  } \
+  }, \
+  "remoteUser": "tds" \
 }]'
 
-# FastAPI uses uvicorn for a development server as well
-RUN pip install --upgrade pip && pip install --no-cache-dir "uvicorn[standard]==0.30.1"
+RUN apt-get update -y; \
+    apt-get upgrade -y; \
+    apt-get install -y \
+            bash \
+            build-essential \
+            curl \
+            git \
+            gosu \
+            jq \
+            libpq-dev \
+            perl \
+            procps \
+            vim; \
+    rm -rf /var/lib/apt/lists/*;
+
+RUN pip install --no-cache-dir -U pip; \
+    pip install --no-cache-dir poetry==1.8.5; \
+    pip install --no-cache-dir 'uvicorn[standard]>=0.34.0,<0.35'
+
+# INIT DIRECTORIES
+RUN mkdir /tds /run/secrets
 WORKDIR /tds
 
 COPY pyproject.toml .
 COPY poetry.lock .
-
+COPY gosu_entrypoint.bash .
 COPY run.dev.bash .
 
 # Install production + development dependencies
@@ -26,8 +50,8 @@ COPY run.dev.bash .
 RUN poetry config virtualenvs.create false && \
     poetry --no-cache install --no-root
 
-# Tell the service that we're running a local development container
-ENV BENTO_CONTAINER_LOCAL=true
+RUN chmod +x ./*.bash
 
 # Don't copy in actual code, since it'll be mounted in via volume for development
+ENTRYPOINT [ "bash", "./gosu_entrypoint.bash" ]
 CMD [ "bash", "./run.dev.bash" ]
