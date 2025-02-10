@@ -29,6 +29,46 @@ For testing purposes, this repository includes an RCM and gene lenghts file:
 - [rcm_file.csv](tests/data/rcm_file.csv)
 - [gene_lengths.csv](tests/data/gene_lengths.csv)
 
+### Environment variables
+
+The following environment variables should be set when running a TDS container:
+
+| Name               | Description                                          | Default    |
+| ------------------ | ---------------------------------------------------- | ---------- |
+| `TDS_USER_NAME`    | Non-root container user name running the TDS process | `Null`     |
+| `TDS_UID`          | UID of TDS_USER_NAME                                 | `1000`     |
+| `DB_HOST`          | IP or hostname of the database                       | `tds-db`   |
+| `DB_PORT`          | Database port                                        | `5432`     |
+| `DB_USER`          | Database username                                    | `tds_user` |
+| `DB_NAME`          | Database name                                        | `tds`      |
+| `DB_PASSWORD`      | DB_USER's Database password                          | `Null`     |
+| `DB_PASSWORD_FILE` | Docker secret file for DB_USER's Database password   | `Null`     |
+| `CORS_ORIGINS`     | List of allowed CORS origins                         | `Null`     |
+
+**Note:** Only use `DB_PASSWORD` or `DB_PASSWORK_FILE`, not both, since they serve the same purpose in a different fashion.
+
+## Using Docker Secrets for the PostgreSQL credential
+
+The TDS [`Config`](./transcriptomics_data_service/config.py) object has its values populated from environment variables and secrets at startup.
+
+The `Config.db_password` value is populated by either:
+- `DB_PASSWORD=<a secure password>` if using an environment variable
+  - As seen in [docker-compose.dev.yaml](./docker-compose.dev.yaml)
+- `DB_PASSWORD_FILE=/run/secrets/db_password` if using a Docker secret (recommended)
+  - As seen in [docker-compose.secrets.dev.yaml](./docker-compose.secrets.dev.yaml)
+
+Using a Docker secret is recommended for security, as environment variables are more prone to be leaked.
+
+`DB_PASSWORD` should only be considered for local development, or if the database is secured and isolated from public access in a private network.
+
+## Authorization plugin
+
+The Transcriptomics Data Service is meant to be a reusable microservice that can be integrated in existing 
+stacks. Since authorization schemes vary across projects, TDS allows adopters to code their own authorization plugin, 
+enabling adopters to leverage their existing access control code, tools and policies.
+
+See the [authorization docs](./docs/authz.md) for more information on how to create and use the authz plugin with TDS.
+
 ## Starting a standalone TDS
 
 Start the TDS server with a local PostgreSQL database for testing by running the following command.

@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Update dependencies and install module locally
-/poetry_user_install_dev.bash
+poetry export -f requirements.txt --with dev --output requirements.txt
+pip install --no-cache-dir --user -r requirements.txt
+rm requirements.txt
+pip install -e .
 
 # Extra dependencies installation for authz plugin
 if [ -f /tds/lib/requirements.txt ]; then
