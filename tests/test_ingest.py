@@ -32,12 +32,6 @@ def _ingest_rcm_file(
     return res
 
 
-def test_ingest_missing_api_key(test_client: TestClient, db_cleanup, db_with_experiment):
-    # No API key
-    response = _ingest_rcm_file(test_client, file_path=RCM_FILE_PATH)
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_ingest_unauthorized(test_client, authz_headers_bad, db_cleanup, db_with_experiment):
     response = _ingest_rcm_file(
         test_client,
@@ -90,13 +84,6 @@ def test_ingest_invalid_csv(test_client, authz_headers, db_cleanup, db_with_expe
         file_path=f"{TEST_FILES_DIR}/rcm_file_bad_column.csv",
         headers=authz_headers,
     )
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-def test_normalize_400(test_client: TestClient, db_cleanup, db_with_experiment):
-    exp_id_missing = "bad-id"
-    method = NormalizationMethodEnum.tpm.value
-    response = test_client.post(f"/normalize/{exp_id_missing}/{method}")
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 

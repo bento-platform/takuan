@@ -29,7 +29,7 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
 
     def __init__(self, config: Config, logger: Logger) -> None:
         super().__init__()
-        self.enabled = config.bento_authz_enabled
+        self.enabled = config.authz_enabled
         self.logger = logger
 
         # Load the api_key from the config's extras
@@ -72,10 +72,6 @@ class ApiKeyAuthzMiddleware(BaseAuthzMiddleware):
                 raise HTTPException(status_code=403, detail="Unauthorized: invalid API key")
 
         return Depends(_inner)
-
-    def dep_ingest_router(self) -> Sequence[Depends]:
-        # Require API key check on the ingest router
-        return [self._dep_check_api_key()]
 
     def dep_expression_router(self) -> Sequence[Depends]:
         # Require API key check on the expressions router

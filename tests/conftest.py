@@ -10,10 +10,8 @@ from tests.test_db import TEST_EXPERIMENT_RESULT
 from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
 
-os.environ["BENTO_DEBUG"] = "true"
-os.environ["BENTO_VALIDATE_SSL"] = "false"
 os.environ["CORS_ORIGINS"] = "*"
-os.environ["BENTO_AUTHZ_SERVICE_URL"] = "https://authz.local"
+os.environ["AUTHZ_ENABLED"] = "True"
 
 from transcriptomics_data_service.config import Config, get_config
 from transcriptomics_data_service.main import app
@@ -67,10 +65,18 @@ def test_client(db: Database):
 
 @pytest.fixture
 def authz_headers(config) -> HeaderTypes:
+    # Valid authz header from the config
     api_key = config.model_extra.get("api_key")
     return {"x-api-key": api_key}
 
 
 @pytest.fixture
 def authz_headers_bad() -> HeaderTypes:
+    # Invalid authz header: 403 wrong API key
     return {"x-api-key": "bad key"}
+
+
+@pytest.fixture
+def authz_headers_empty() -> HeaderTypes:
+    # Invalid authz header: 400 missing header value
+    return {"x-api-key": ""}

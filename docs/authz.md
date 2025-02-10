@@ -85,7 +85,6 @@ If you are performing authz checks using these methods, make sure to raise an ex
 | App/router dependency methods  | Description                                                                                      |
 | ------------------------------ | ------------------------------------------------------------------------------------------------ |
 | `dep_app`                      | Returns a list of injectables that will be added as app dependencies, covering ALL paths         |
-| `dep_ingest_router`            | Returns a list of injectables for the ingest router, covers `/ingest` and `/normalize` endpoints |
 | `dep_expression_router`        | Returns a list of injectables for the expression router, covers `/expressions` endpoints         |
 | `dep_experiment_result_router` | Returns a list of injectables for the expression router, covers `/experiment` endpoints          |
 

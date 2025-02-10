@@ -104,6 +104,43 @@ docker compose -f ./docker-compose.dev.yaml down
 
 You can then attach VS Code to the `tds` container, and use the preconfigured `Python Debugger (TDS)` for interactive debugging.
 
+## Using Docker Secrets for the PostgreSQL credential
+
+The TDS [`Config`](./transcriptomics_data_service/config.py) object has its values populated from environment variables and secrets at startup.
+
+The `Config.db_password` value is populated by either:
+- `DB_PASSWORD=<a secure password>` if using an environment variable
+  - As seen in [docker-compose.dev.yaml](./docker-compose.dev.yaml)
+- `DB_PASSWORD_FILE=/run/secrets/db_password` if using a Docker secret (recommended)
+  - As seen in [docker-compose.secrets.dev.yaml](./docker-compose.secrets.dev.yaml)
+
+Using a Docker secret is recommended for security, as environment variables are more prone to be leaked.
+
+`DB_PASSWORD` should only be considered for local development, or if the database is secured and isolated from public access in a private network.
+
+## Authorization plugin
+
+The Transcriptomics Data Service is meant to be a reusable microservice that can be integrated in existing 
+stacks. Since authorization schemes vary across projects, TDS allows adopters to code their own authorization plugin, 
+enabling adopters to leverage their existing access control code, tools and policies.
+
+See the [authorization docs](./docs/authz.md) for more information on how to create and use the authz plugin with TDS.
+
+## GA4GH Service Info
+
+This service implements GA4GH's Service-Info [spec](https://www.ga4gh.org/product/service-info/).
+
+If left unconfigured, a default service info object will be returned.
+
+For adopters outside of the Bento stack, we recommend that you provide a custom service info object when deploying.
+
+This can be done by simply mounting a JSON file in the TDS container.
+
+When starting, the service will look for a JSON file at `/tds/lib/service-info.json`.
+
+If the file exists, it will be served from the `GET /service-info` endpoint, otherwise the default is used.
+
+
 ## Endpoints
 
 TODO: replace this with Swagger UI docs generated from CI workflows.

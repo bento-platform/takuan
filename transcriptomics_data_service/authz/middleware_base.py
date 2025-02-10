@@ -57,13 +57,6 @@ class BaseAuthzMiddleware:
         """
         return None
 
-    def dep_ingest_router(self) -> None | Sequence[Depends]:
-        """
-        Specify dependencies to be added to the ingest router.
-        This dependency will apply on all the router's paths.
-        """
-        return None
-
     def dep_expression_router(self) -> None | Sequence[Depends]:
         """
         Specify dependencies to be added to the expression_router.

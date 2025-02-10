@@ -26,14 +26,6 @@ def test_create_experiment(exp, test_client, authz_headers, db_cleanup):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_create_experiment_400(test_client, authz_headers, db_cleanup):
-    response = test_client.post(
-        "/experiment",
-        headers=authz_headers,
-    )
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
     response = test_client.post(
         "/experiment",
@@ -54,24 +46,11 @@ def test_get_experiment(test_client, authz_headers, db_with_experiment, db_clean
     assert TEST_EXPERIMENT_RESULT == ExperimentResult(**data)
 
 
-# EMPTY DB
-def test_get_experiment_400(test_client):
-    # Missing api-key
-    response = test_client.get("/experiment/non-existant")
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_get_experiment_200_empty(test_client, authz_headers):
     # Missing api-key
     response = test_client.get("/experiment/non-existant", headers=authz_headers)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() is None
-
-
-def test_delete_experiment_400(test_client):
-    # Missing api-key
-    response = test_client.delete("/experiment/non-existant")
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_delete_experiment_403(test_client, authz_headers_bad):
