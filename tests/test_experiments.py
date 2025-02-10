@@ -9,8 +9,6 @@ from transcriptomics_data_service.models import ExperimentResult
 config = get_config()
 logger = get_logger(config)
 
-APPLICATION_JSON = {"content-type": "application/json"}
-
 TEST_EXPERIMENT_RESULT_NO_EXTRA = ExperimentResult(
     experiment_result_id="12345",
     assembly_id="assembly_test_id",
@@ -25,7 +23,6 @@ def test_create_experiment(exp, test_client, authz_headers, db_cleanup):
         headers=authz_headers,
         data=exp.model_dump_json(),
     )
-    logger.debug(response)
     assert response.status_code == status.HTTP_200_OK
 
 
