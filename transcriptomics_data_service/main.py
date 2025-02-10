@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from transcriptomics_data_service.db import get_db
+from transcriptomics_data_service.models import ServiceInfo
 from transcriptomics_data_service.routers.experiment_results import experiment_router
 from transcriptomics_data_service.routers.normalization import normalization_router
 from transcriptomics_data_service.routers.expressions import expressions_router
@@ -65,5 +66,5 @@ app.include_router(expressions_router)
 
 
 @app.get("/service-info")
-def get_service_info(service_info: ServiceInfoDependency):
+def get_service_info(service_info: ServiceInfoDependency) -> ServiceInfo:
     return service_info

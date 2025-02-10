@@ -5,6 +5,8 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from transcriptomics_data_service import __version__
+
 __all__ = ["ServiceInfoDependency"]
 
 SERVICE_INFO_OVERRIDE_PATH = "/tds/lib/service-info.json"
@@ -21,9 +23,15 @@ def get_service_info():
     if os.path.isfile(SERVICE_INFO_OVERRIDE_PATH):
         # Return the custom service-info if provided
         return read_service_info()
-    # TODO: default service-info def
+
     # Otherwise return the default service-info.
-    return {"id": "default"}
+    return {
+        "id": "ca.c3g.bento:tds",
+        "name": "Transcriptomics Data Service",
+        "type": {"group": "ca.c3g.bento", "artifact": "tds", "version": __version__},
+        "organization": {"name": "C3G", "url": "https://www.computationalgenomics.ca"},
+        "version": __version__,
+    }
 
 
 ServiceInfoDependency = Annotated[dict, Depends(get_service_info)]

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel, ConfigDict, Field
+from typing import List, Optional
 from enum import Enum
+from bento_lib.service_info.types import GA4GHServiceOrganizationModel
 
 __all__ = [
     "ExperimentResult",
@@ -101,3 +102,33 @@ class ExpressionQueryBody(PaginatedRequest):
 class GeneExpressionResponse(PaginatedResponse):
     query: ExpressionQueryBody = Field(..., description="The query that produced this response")
     expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
+
+
+#####################################
+# GA4GH Service Info
+#####################################
+
+
+class ServiceType(BaseModel):
+    group: str
+    artifact: str
+    version: str
+
+
+class ServiceInfo(BaseModel):
+    # Required
+    id: str
+    name: str
+    type: ServiceType
+    organization: GA4GHServiceOrganizationModel
+    version: str
+
+    # Not required
+    contactUrl: Optional[str] = None
+    documentationUrl: Optional[str] = None
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+    environment: Optional[str] = None
+
+    # Allow extra properties to extend the spec
+    model_config = ConfigDict(extra="allow")

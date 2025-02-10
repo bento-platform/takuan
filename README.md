@@ -86,6 +86,21 @@ enabling adopters to leverage their existing access control code, tools and poli
 
 See the [authorization docs](./docs/authz.md) for more information on how to create and use the authz plugin with TDS.
 
+## GA4GH Service Info
+
+This service implements GA4GH's Service-Info [spec](https://www.ga4gh.org/product/service-info/).
+
+If left unconfigured, a default service info object will be returned.
+
+For adopters outside of the Bento stack, we recommend that you provide a custom service info object when deploying.
+
+This can be done by simply mounting a JSON file in the TDS container.
+
+When starting, the service will look for a JSON file at `/tds/lib/service-info.json`.
+
+If the file exists, it will be served from the `GET /service-info` endpoint, otherwise the default is used.
+
+
 ## Endpoints
 
 TODO: replace this with Swagger UI docs generated from CI workflows.
