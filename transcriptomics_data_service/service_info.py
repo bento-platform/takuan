@@ -12,8 +12,8 @@ __all__ = ["ServiceInfoDependency"]
 SERVICE_INFO_OVERRIDE_PATH = "/tds/lib/service-info.json"
 
 
-def read_service_info():
-    with open(SERVICE_INFO_OVERRIDE_PATH, "r") as f:
+def read_service_info(path: str):
+    with open(path, "r") as f:
         service_info = json.load(f)
     return service_info
 
@@ -22,7 +22,7 @@ def read_service_info():
 def get_service_info():
     if os.path.isfile(SERVICE_INFO_OVERRIDE_PATH):
         # Return the custom service-info if provided
-        return read_service_info()
+        return read_service_info(SERVICE_INFO_OVERRIDE_PATH)
 
     # Otherwise return the default service-info.
     return {

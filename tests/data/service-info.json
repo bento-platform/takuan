@@ -1,0 +1,7 @@
+{
+    "id": "ca.c3g.bento:tds",
+    "name": "Transcriptomics Data Service",
+    "type": {"group": "ca.c3g.bento", "artifact": "tds", "version": "test"},
+    "organization": {"name": "C3G", "url": "https://www.computationalgenomics.ca"},
+    "version": "test"
+}
