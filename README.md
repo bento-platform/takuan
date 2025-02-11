@@ -78,7 +78,7 @@ For testing purposes, this repository includes an RCM and gene lenghts file:
 
 # Configuration
 
-### Environment variables
+## Environment variables
 
 The following environment variables should be set when running a Takuan container:
 
@@ -154,28 +154,6 @@ docker compose -f ./docker-compose.dev.yaml down
 
 You can then attach VS Code to the `takuan` container, and use the preconfigured `Python Debugger (Takuan)` for interactive debugging.
 
-## Using Docker Secrets for the PostgreSQL credential
-
-The Takuan [`Config`](./transcriptomics_data_service/config.py) object has its values populated from environment variables and secrets at startup.
-
-The `Config.db_password` value is populated by either:
-- `DB_PASSWORD=<a secure password>` if using an environment variable
-  - As seen in [docker-compose.dev.yaml](./docker-compose.dev.yaml)
-- `DB_PASSWORD_FILE=/run/secrets/db_password` if using a Docker secret (recommended)
-  - As seen in [docker-compose.secrets.dev.yaml](./docker-compose.secrets.dev.yaml)
-
-Using a Docker secret is recommended for security, as environment variables are more prone to be leaked.
-
-`DB_PASSWORD` should only be considered for local development, or if the database is secured and isolated from public access in a private network.
-
-## Authorization plugin
-
-The Transcriptomics Data Service is meant to be a reusable microservice that can be integrated in existing 
-stacks. Since authorization schemes vary across projects, Takuan allows adopters to code their own authorization plugin, 
-enabling adopters to leverage their existing access control code, tools and policies.
-
-See the [authorization docs](./docs/authz.md) for more information on how to create and use the authz plugin with Takuan.
-
 ## GA4GH Service Info
 
 This service implements GA4GH's Service-Info [spec](https://www.ga4gh.org/product/service-info/).
@@ -211,6 +189,19 @@ The service exposes the following endpoints:
 
 <!-- TODO: Deploy a Swagger UI pointing to the latest release once we have one. -->
 **Note:** For a more thorough API documentation, please refer to the OpenAPI release artifacts (openapi.json), or consult the hosted docs (link to come).
+
+## Mount points
+
+A Takuan deployment can be customized by mounting certain files to the container.
+The table bellow lists the files that can be mounted to a Takuan container to customize its behaviour.
+
+| Container path               | Description                                              |
+| ---------------------------- | -------------------------------------------------------- |
+| `/run/secrets/`              | Docker secrets directory                                 |
+| `/tds/lib/.env`              | Extra environment variables for an authz plugin          |
+| `/tds/lib/authz.module.py`   | Custom authorization plugin implementation               |
+| `/tds/lib/requirements.txt`  | Extra Python dependencies to install for an authz plugin |
+| `/tds/lib/service-info.json` | Custom GA4GH service-info JSON definition                |
 
 ## Docker images
 
