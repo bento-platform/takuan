@@ -35,3 +35,6 @@ build-backend = "poetry.core.masonry.api"
 # Linting and formating using Ruff
 [tool.ruff]
 line-length = 120
+
+[tool.coverage.run]
+omit = ["transcriptomics_data_service/export-openapi.py"]
