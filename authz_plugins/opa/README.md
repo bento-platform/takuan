@@ -1,6 +1,6 @@
 # OPA authorization example
 
-This sample authorization plugin showcases how to use OPA as the authorization service for TDS.
+This sample authorization plugin showcases how to use OPA as the authorization service for Takuan.
 While this could be done in pure Python with HTTP, 
 using the [OPA client for Python](https://github.com/Turall/OPA-python-client) is more convenient.
 

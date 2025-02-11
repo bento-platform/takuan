@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger (TDS): Dev Container Attach",
+            "name": "Python Debugger (Takuan): Dev Container Attach",
             "type": "debugpy",
             "request": "attach",
             "justMyCode": false,

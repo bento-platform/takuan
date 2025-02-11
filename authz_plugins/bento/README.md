@@ -1,6 +1,6 @@
 # Bento authorization
 
-This is the authorization middleware used to authorize TDS requests with the
+This is the authorization middleware used to authorize Takuan requests with the
 [Bento Authorization Service](https://github.com/bento-platform/bento_authorization_service).
 
 ## Contents
