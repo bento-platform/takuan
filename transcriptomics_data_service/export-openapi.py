@@ -7,5 +7,5 @@ os.environ["DB_PASSWORD"] = ""
 
 from transcriptomics_data_service.main import app
 
-with open('openapi.json', 'w') as f:
+with open("openapi.json", "w") as f:
     json.dump(app.openapi(), f)
