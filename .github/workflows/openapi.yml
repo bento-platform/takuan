@@ -23,8 +23,7 @@ jobs:
     - name: Install dependencies
       run: poetry install
     - name: Export OpenAPI schema
-      run: |
-        python transcriptomics_data_service/export-openapi.py
+      run: python ./transcriptomics_data_service/export-openapi.py
     - name: Upload OpenAPI release artifact
       uses: actions/github-script@v7
       with:
