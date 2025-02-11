@@ -33,17 +33,18 @@ For testing purposes, this repository includes an RCM and gene lenghts file:
 
 The following environment variables should be set when running a TDS container:
 
-| Name               | Description                                          | Default    |
-| ------------------ | ---------------------------------------------------- | ---------- |
-| `TDS_USER_NAME`    | Non-root container user name running the TDS process | `Null`     |
-| `TDS_UID`          | UID of TDS_USER_NAME                                 | `1000`     |
-| `DB_HOST`          | IP or hostname of the database                       | `tds-db`   |
-| `DB_PORT`          | Database port                                        | `5432`     |
-| `DB_USER`          | Database username                                    | `tds_user` |
-| `DB_NAME`          | Database name                                        | `tds`      |
-| `DB_PASSWORD`      | DB_USER's Database password                          | `Null`     |
-| `DB_PASSWORD_FILE` | Docker secret file for DB_USER's Database password   | `Null`     |
-| `CORS_ORIGINS`     | List of allowed CORS origins                         | `Null`     |
+| Name               | Description                                             | Default    |
+| ------------------ | ------------------------------------------------------- | ---------- |
+| `AUTHZ_ENABLED`    | Enables/disables the authorization plugin.              | `False`    |
+| `CORS_ORIGINS`     | List of allowed CORS origins                            | `Null`     |
+| `DB_HOST`          | IP or hostname of the database                          | `tds-db`   |
+| `DB_PORT`          | Database port                                           | `5432`     |
+| `DB_USER`          | Database username                                       | `tds_user` |
+| `DB_NAME`          | Database name                                           | `tds`      |
+| `DB_PASSWORD`      | DB_USER's Database password                             | `Null`     |
+| `DB_PASSWORD_FILE` | Docker secret file for DB_USER's Database password      | `Null`     |
+| `TDS_USER_NAME`    | Non-root container user name running the server process | `Null`     |
+| `TDS_UID`          | UID of TDS_USER_NAME                                    | `1000`     |
 
 **Note:** Only use `DB_PASSWORD` or `DB_PASSWORK_FILE`, not both, since they serve the same purpose in a different fashion.
 
@@ -143,15 +144,24 @@ If the file exists, it will be served from the `GET /service-info` endpoint, oth
 
 ## Endpoints
 
-TODO: replace this with Swagger UI docs generated from CI workflows.
+The service exposes the following endpoints:
 
-* `/service-info`
-  * GA4GH service info
-* `/ingest`
-* `/normalize`
-* `/expressions`
-* `/experiment`
-* `/search` (WIP)
+| Endpoint                                      | Method | Description                                                                                    |
+| --------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `/experiment`                                 | GET    | Get all experiments                                                                            |
+| `/experiment`                                 | POST   | Create an experiment                                                                           |
+| `/experiment/{experiment_result_id}`          | GET    | Get an experiment by unique ID                                                                 |
+| `/experiment/{experiment_result_id}`          | DELETE | Delete an experiment by unique ID                                                              |
+| `/experiment/{experiment_result_id}/samples`  | POST   | Retrieve the samples for a given experiment                                                    |
+| `/experiment/{experiment_result_id}/features` | POST   | Retrieve the features for a given experiment                                                   |
+| `/experiment/{experiment_result_id}/ingest`   | POST   | Ingest transcriptomics data into an experiment                                                 |
+| `/normalize/{experiment_result_id}/{method}`  | POST   | Normalize an experiment's gene expressions with one of the supported methods (TPM, TMM, GETMM) |
+| `/expressions`                                | POST   | Retrieve expressions with filter parameters                                                    |
+| `/service-info`                               | GET    | Returns a GA4GH service-info object describing the service                                     |
+
+
+<!-- TODO: Deploy a Swagger UI pointing to the latest release once we have one. -->
+**Note:** For a more thorough API documentation, please refer to the OpenAPI release artifacts (openapi.json), or consult the hosted docs (link to come).
 
 ## Docker images
 
@@ -165,7 +175,7 @@ Images are built and published using the following tags:
 - `edge`: The top of the `main` branch
 - `pr-<number>`: Build for a pull request that targets `main`
 
-Note: Images with the `-dev` suffix (e.g. `edge-dev`) are for local development.
+**Note:** Images with the `-dev` suffix (e.g. `edge-dev`) are based on `dev.Dockerfile` for local development.
 
 
 To pull an image, or reference it in a compose file, use this pattern:
