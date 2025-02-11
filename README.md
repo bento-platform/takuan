@@ -1,7 +1,7 @@
 # Takuan
 
 ![Test Status](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/test.yml/badge.svg)
-[![codecov](https://codecov.io/gh/bento-platform/transcriptomics_data_service/graph/badge.svg)](https://codecov.io/gh/bento-platform/transcriptomics_data_service)
+[![codecov](https://codecov.io/gh/bento-platform/takuan/graph/badge.svg)](https://codecov.io/gh/bento-platform/takuan)
 ![Lint Status](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/lint.yml/badge.svg)
 ![Docker Build](https://github.com/bento-platform/transcriptomics_data_service/actions/workflows/build.yml/badge.svg)
 
