@@ -1,9 +1,9 @@
 # Authorization plugin
 
-Although TDS is part of the Bento platform, it is meant to be reusable in other software stacks.
+Although Takuan is part of the Bento platform, it is meant to be reusable in other software stacks.
 
 Since authorization requirements and technology vary wildy across different projects, 
-TDS allows adopters to write their own authorization logic in python.
+Takuan allows adopters to write their own authorization logic in python.
 
 For different authorization requirements, you could choose to write a custom module that performs authorization checks based on:
 * An API key in the request header or in a cookie
@@ -18,7 +18,7 @@ For different authorization requirements, you could choose to write a custom mod
 
 ## Implementing an authorization plugin
 
-When starting the TDS container, the FastAPI server will attempt to dynamicaly load the authorization plugin 
+When starting the Takuan container, the FastAPI server will attempt to dynamicaly load the authorization plugin 
 middleware from `lib/authz.module.py`.
 
 If authorization is enabled and there is no file at `lib/authz.module.py`, an exception will be thrown and the server
@@ -130,20 +130,20 @@ You can add custom settings for your authorization plugin.
 Following the API key authorization plugin [example](../authz_plugins/api_key/README.md), 
 you will notice that the API key is not hard coded in a variable, but imported from the pydantic config.
 
-The TDS pydantic settings are configured to load a `.env` file from the authz plugin mount.
+The Takuan pydantic settings are configured to load a `.env` file from the authz plugin mount.
 After the `.env` is loaded, you can access the extra settings with: `config.model_extra.get(<lowercase .env var name>)`.
 
 In other scenarios, you could store any configuration values required for your authorization logic.
 
 ## Defining additional python dependencies
 
-When implementing an authorization plugin, you may realize that the default python modules used in TDS are not enough
+When implementing an authorization plugin, you may realize that the default python modules used in Takuan are not enough
 for your needs.
 
 Maybe you want to use OPA's Python client to evaluate policies, or an in-house Python library your team made for this
 purpose.
 
-While the dependencies declared in [pyproject.toml](../pyproject.toml) are fixed for a given TDS release,
+While the dependencies declared in [pyproject.toml](../pyproject.toml) are fixed for a given Takuan release,
 you can still speficy extra dependencies to be installed when the container starts!
 
 To do so, add a `requirements.txt` file to the authz plugin mount.
