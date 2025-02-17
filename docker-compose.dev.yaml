@@ -40,3 +40,16 @@ services:
     restart: unless-stopped
     ports:
       - 8080:8080
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: ./dev.jupyter.Dockerfile
+    container_name: jupyter-dev
+    depends_on:
+      - tds-db
+      - tds
+    volumes:
+      - ./jupyter_notebooks:/home/jovyan/work
+    ports:
+      - "3001:3001"
