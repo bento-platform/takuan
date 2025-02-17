@@ -170,3 +170,6 @@ pg_data
 
 # TDS custom authz module
 lib/*
+
+# Jupyter checkpoints
+jupyter_notebooks/.ipynb_checkpoints/*
