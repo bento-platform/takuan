@@ -24,8 +24,6 @@ services:
       # Use API key plugin for authz testing
       - $PWD/authz_plugins/api_key:/tds/lib
       - $PWD/authz_plugins/api_key/example.env:/tds/lib/.env # map example.env to .env
-    ports:
-      - "5000:5000"
 
   tds-db:
     image: postgres:16
