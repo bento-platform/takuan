@@ -5,10 +5,13 @@ import pandas as pd
 
 from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
+from transcriptomics_data_service.ingestion import CSVIngestionHandler, TSVIngestionHandler
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
+    CountTypesEnum,
     ExperimentResult,
     GeneExpression,
+    NormalizationMethodEnum,
     PaginatedRequest,
     SamplesResponse,
     FeaturesResponse,
@@ -157,10 +160,26 @@ async def ingest_tsv(
     logger: LoggerDependency,
     experiment_result_id: str,
     sample_file: UploadFile = File(...),
+    norm_type: NormalizationMethodEnum = None
 ):
     if sample_file.content_type != "text/tsv":
         # raise something
         pass
+
+    # if norm_type is None:
+    #     norm_type = CountTypesEnum.raw.value
+    
+    # TODO: param for sample_id
+    sample_id = sample_file.filename
+
+    # Reading and converting uploaded RCM file to DataFrame
+    file_bytes = sample_file.file.read()
+    handler = TSVIngestionHandler(experiment_result_id, sample_id, db, logger)
+    handler.load_dataframe(file_bytes)
+    await handler.ingest(norm_type)
+
+    return {"message": "Ingestion completed successfully"}
+
         
 
 @experiment_router.post(
@@ -175,67 +194,19 @@ async def ingest(
     logger: LoggerDependency,
     experiment_result_id: str,
     rcm_file: UploadFile = File(...),
+    count_type: CountTypesEnum = None
 ):
     if not (rcm_file.content_type == "text/csv"):
         # raise something
         pass
+
+    if count_type is None:
+        count_type = CountTypesEnum.raw.value
     
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
-    rcm_df = _load_csv(file_bytes, logger)
-
-    experiment_result = await db.read_experiment_result(experiment_result_id)
-    if experiment_result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No experiment result found for provided ID",
-        )
-
-    # Handling ingestion as a transactional operation
-    async with db.transaction_connection() as transaction_con:
-        gene_expressions: list[GeneExpression] = [
-            GeneExpression(
-                gene_code=gene_code,
-                sample_id=sample_id,
-                experiment_result_id=experiment_result_id,
-                raw_count=raw_count,
-            )
-            for gene_code, row in rcm_df.iterrows()
-            for sample_id, raw_count in row.items()
-        ]
-
-        await db.create_gene_expressions(gene_expressions, transaction_con)
+    handler = CSVIngestionHandler(experiment_result_id, db, logger)
+    handler.load_dataframe(file_bytes)
+    await handler.ingest(count_type)
 
     return {"message": "Ingestion completed successfully"}
-
-
-def _check_index_duplicates(index: pd.Index, logger: Logger):
-    duplicated = index.duplicated()
-    if duplicated.any():
-        dupes = index[duplicated]
-        err_msg = f"Found duplicated {index.name}: {dupes.values}"
-        logger.debug(err_msg)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
-
-
-def _load_csv(file_bytes: bytes, logger: Logger) -> pd.DataFrame:
-    buffer = StringIO(file_bytes.decode("utf-8"))
-    buffer.seek(0)
-    try:
-        df = pd.read_csv(buffer, index_col=0, header=0)
-
-        # Validating for unique Gene and Sample IDs
-        _check_index_duplicates(df.index, logger)  # Gene IDs
-        _check_index_duplicates(df.columns, logger)  # Sample IDs
-
-        # Ensuring raw count values are integers
-        df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
-        return df
-
-    except pd.errors.ParserError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Value error in CSV data: {e}",
-        )

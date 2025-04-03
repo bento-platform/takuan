@@ -9,10 +9,11 @@ CREATE TABLE IF NOT EXISTS gene_expressions (
     gene_code VARCHAR(255) NOT NULL,
     sample_id VARCHAR(255) NOT NULL,
     experiment_result_id VARCHAR(255) NOT NULL REFERENCES experiment_results ON DELETE CASCADE,
-    raw_count INTEGER NOT NULL,
+    raw_count FLOAT,
     tpm_count FLOAT,
     tmm_count FLOAT,
     getmm_count FLOAT,
+    fpkm_count FLOAT,
     PRIMARY KEY (gene_code, sample_id, experiment_result_id)
 );
 
