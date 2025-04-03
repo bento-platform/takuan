@@ -146,7 +146,25 @@ async def delete_experiment_result(db: DatabaseDependency, experiment_result_id:
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/ingest",
+    "/{experiment_result_id}/ingest/tsv",
+    status_code=status.HTTP_200_OK,
+    # Injects the plugin authz middleware dep_authorize_ingest function
+    dependencies=authz_plugin.dep_authz_ingest(),
+    description="Ingest detailed counts for a single sample TSV file",
+)
+async def ingest_tsv(
+    db: DatabaseDependency,
+    logger: LoggerDependency,
+    experiment_result_id: str,
+    sample_file: UploadFile = File(...),
+):
+    if sample_file.content_type != "text/tsv":
+        # raise something
+        pass
+        
+
+@experiment_router.post(
+    "/{experiment_result_id}/ingest/csv",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
@@ -158,6 +176,10 @@ async def ingest(
     experiment_result_id: str,
     rcm_file: UploadFile = File(...),
 ):
+    if not (rcm_file.content_type == "text/csv"):
+        # raise something
+        pass
+    
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
     rcm_df = _load_csv(file_bytes, logger)
