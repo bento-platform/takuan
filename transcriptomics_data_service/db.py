@@ -197,7 +197,7 @@ class Database(PgAsyncDatabase):
     ########################
     # CRUD: gene_expressions
     ########################
-    async def create_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
+    async def create_or_update_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
         """
         Creates rows on gene_expression as part of an Atomic transaction
         Rows on gene_expressions can only be created as part of an RCM ingestion.
@@ -213,17 +213,27 @@ class Database(PgAsyncDatabase):
                 expr.tpm_count,
                 expr.tmm_count,
                 expr.getmm_count,
+                expr.fpkm_count
             )
             for expr in expressions
         ]
 
         query = """
-        INSERT INTO gene_expressions (
-            gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        """
-
-        await transaction_conn.executemany(query, records)
+            INSERT INTO gene_expressions as ge (
+                gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count, fpkm_count
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (gene_code, sample_id, experiment_result_id)
+            DO UPDATE SET
+                raw_count = COALESCE(EXCLUDED.raw_count, ge.raw_count),
+                tpm_count = COALESCE(EXCLUDED.tpm_count, ge.tpm_count),
+                tmm_count = COALESCE(EXCLUDED.tmm_count, ge.tmm_count),
+                getmm_count = COALESCE(EXCLUDED.getmm_count, ge.getmm_count),
+                fpkm_count = COALESCE(EXCLUDED.fpkm_count, ge.fpkm_count)
+            """
+        try:
+            await transaction_conn.executemany(query, records)
+        except Exception as e:
+            self.logger.debug(e)
         self.logger.info(f"Inserted {len(records)} gene expression records.")
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
@@ -307,6 +317,17 @@ class Database(PgAsyncDatabase):
             async with conn.transaction():
                 # operations must be made using this connection for the transaction to apply
                 yield conn
+
+    async def fetch_gene_expression(self, expression: GeneExpression) -> GeneExpression | None:
+        conn: asyncpg.Connection
+        async with self.connect() as conn:
+            query = """
+                SELECT * FROM gene_expressions
+                WHERE experiment_result_id = $1 AND gene_code = $2 AND sample_id = $3
+                """
+            args = [expression.experiment_result_id, expression.gene_code, expression.sample_id]
+            result = await conn.fetchrow(query, *args)
+        return self._deserialize_gene_expression(result) if result else None
 
     async def fetch_gene_expressions(
         self,

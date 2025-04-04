@@ -160,21 +160,16 @@ async def ingest_tsv(
     logger: LoggerDependency,
     experiment_result_id: str,
     sample_file: UploadFile = File(...),
+    sample_id: str = None,
     norm_type: NormalizationMethodEnum = None
 ):
-    if sample_file.content_type != "text/tsv":
-        # raise something
-        pass
-
-    # if norm_type is None:
-    #     norm_type = CountTypesEnum.raw.value
-    
-    # TODO: param for sample_id
-    sample_id = sample_file.filename
+    # Use sample ID param if provided, otherwise use the uploded file name
+    if sample_id is None:
+        sample_id = sample_file.filename
 
     # Reading and converting uploaded RCM file to DataFrame
-    file_bytes = sample_file.file.read()
     handler = TSVIngestionHandler(experiment_result_id, sample_id, db, logger)
+    file_bytes = sample_file.file.read()
     handler.load_dataframe(file_bytes)
     await handler.ingest(norm_type)
 
@@ -194,14 +189,10 @@ async def ingest(
     logger: LoggerDependency,
     experiment_result_id: str,
     rcm_file: UploadFile = File(...),
-    count_type: CountTypesEnum = None
+    count_type: CountTypesEnum | None = None
 ):
-    if not (rcm_file.content_type == "text/csv"):
-        # raise something
-        pass
-
     if count_type is None:
-        count_type = CountTypesEnum.raw.value
+        count_type = CountTypesEnum.raw
     
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
