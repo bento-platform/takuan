@@ -149,7 +149,7 @@ async def delete_experiment_result(db: DatabaseDependency, experiment_result_id:
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/ingest/tsv",
+    "/{experiment_result_id}/ingest/single",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
@@ -178,7 +178,7 @@ async def ingest_tsv(
         
 
 @experiment_router.post(
-    "/{experiment_result_id}/ingest/csv",
+    "/{experiment_result_id}/ingest/matrix",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
