@@ -197,7 +197,9 @@ class Database(PgAsyncDatabase):
     ########################
     # CRUD: gene_expressions
     ########################
-    async def create_or_update_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
+    async def create_or_update_gene_expressions(
+        self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection
+    ):
         """
         Creates rows on gene_expression as part of an Atomic transaction
         Rows on gene_expressions can only be created as part of an RCM ingestion.
@@ -213,7 +215,7 @@ class Database(PgAsyncDatabase):
                 expr.tpm_count,
                 expr.tmm_count,
                 expr.getmm_count,
-                expr.fpkm_count
+                expr.fpkm_count,
             )
             for expr in expressions
         ]

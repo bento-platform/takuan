@@ -1,8 +1,5 @@
-from io import StringIO
-from logging import Logger
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-import pandas as pd
 
 from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
@@ -11,7 +8,6 @@ from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
     CountTypesEnum,
     ExperimentResult,
-    GeneExpression,
     NormalizationMethodEnum,
     PaginatedRequest,
     SamplesResponse,
@@ -170,7 +166,7 @@ async def ingest_tsv(
     experiment_result_id: str,
     sample_file: UploadFile = File(...),
     sample_id: str = None,
-    norm_type: NormalizationMethodEnum = None
+    norm_type: NormalizationMethodEnum = None,
 ):
     # Use sample ID param if provided, otherwise use the uploded file name
     if sample_id is None:
@@ -184,7 +180,6 @@ async def ingest_tsv(
 
     return {"message": "Ingestion completed successfully"}
 
-        
 
 @experiment_router.post(
     "/{experiment_result_id}/ingest/matrix",
@@ -198,11 +193,11 @@ async def ingest(
     logger: LoggerDependency,
     experiment_result_id: str,
     rcm_file: UploadFile = File(...),
-    count_type: CountTypesEnum | None = None
+    count_type: CountTypesEnum | None = None,
 ):
     if count_type is None:
         count_type = CountTypesEnum.raw
-    
+
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
     handler = CSVIngestionHandler(experiment_result_id, db, logger)

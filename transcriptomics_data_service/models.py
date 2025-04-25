@@ -24,6 +24,7 @@ GETMM = "getmm"
 RAW = "raw"
 FPKM = "fpkm"
 
+
 class NormalizationMethodEnum(str, Enum):
     tpm = TPM
     tmm = TMM

@@ -24,9 +24,7 @@ class BaseIngestionHandler:
     df: pd.DataFrame | None
     logger: Logger
 
-    def __init__(
-        self, experiment_result_id: str, db: DatabaseDependency, logger: Logger
-    ):
+    def __init__(self, experiment_result_id: str, db: DatabaseDependency, logger: Logger):
         self.experiment_result_id = experiment_result_id
         self.db = db
         self.logger = logger
@@ -37,9 +35,7 @@ class BaseIngestionHandler:
         """
         raise NotImplementedError()
 
-    def dataframe_to_expressions(
-        self, count_type: CountTypesEnum
-    ) -> list[GeneExpression]:
+    def dataframe_to_expressions(self, count_type: CountTypesEnum) -> list[GeneExpression]:
         """
         Parses the loaded data frame into a list of GeneExpression for ingestion.
         A count type can be specified in order to indicate if a count is pre-normalised.
@@ -173,9 +169,7 @@ def parse_tsv(data: bytes, logger: Logger) -> pd.DataFrame:
         return df
 
     except pd.errors.ParserError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -198,9 +192,7 @@ def _parse_csv(file_bytes: bytes, logger: Logger) -> pd.DataFrame:
         return df
 
     except pd.errors.ParserError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
