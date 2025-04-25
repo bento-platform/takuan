@@ -1,5 +1,6 @@
 from io import StringIO
 from logging import Logger
+from asyncpg import UniqueViolationError
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 import pandas as pd
 
@@ -89,7 +90,15 @@ async def get_experiment_features_handler(
     dependencies=authz_plugin.dep_authz_create_experiment_result(),
 )
 async def create_experiment(db: DatabaseDependency, logger: LoggerDependency, exp: ExperimentResult):
-    await db.create_experiment_result(exp)
+    try:
+        await db.create_experiment_result(exp)
+    except UniqueViolationError:
+        err_msg = f"Duplicate key error: experiment_result_id={exp.experiment_result_id} already exists."
+        logger.warning(err_msg)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=err_msg,
+        )
     logger.info(f"Created experiment row with ID: {exp.experiment_result_id}")
 
 
@@ -192,7 +201,6 @@ def _check_index_duplicates(index: pd.Index, logger: Logger):
     if duplicated.any():
         dupes = index[duplicated]
         err_msg = f"Found duplicated {index.name}: {dupes.values}"
-        logger.debug(err_msg)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
 
