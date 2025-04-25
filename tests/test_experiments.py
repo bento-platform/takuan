@@ -26,6 +26,23 @@ def test_create_experiment(exp, test_client, authz_headers, db_cleanup):
     assert response.status_code == status.HTTP_200_OK
 
 
+@pytest.mark.parametrize("exp", [TEST_EXPERIMENT_RESULT])
+def test_create_experiment_duplicate_500(exp, test_client, authz_headers, db_cleanup):
+    response = test_client.post(
+        "/experiment",
+        headers=authz_headers,
+        data=exp.model_dump_json(),
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_dup = test_client.post(
+        "/experiment",
+        headers=authz_headers,
+        data=exp.model_dump_json(),
+    )
+    assert response_dup.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
 def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
     response = test_client.post(
         "/experiment",
