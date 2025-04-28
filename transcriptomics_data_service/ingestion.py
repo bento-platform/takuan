@@ -1,6 +1,5 @@
 from io import StringIO
 from logging import Logger
-from typing import TypedDict
 from fastapi import HTTPException, status
 import pandas as pd
 
@@ -91,14 +90,6 @@ class CSVIngestionHandler(BaseIngestionHandler):
         ]
 
 
-class ColumnIndices(TypedDict):
-    gene_id: int = 0
-    abundance: int = 1
-    counts: int = 2
-    length: int = 3
-    counts_from_abundance: 4
-
-
 class TSVIngestionHandler(BaseIngestionHandler):
     """
     TSV format ingestion is for single sample files ONLY.
@@ -122,7 +113,6 @@ class TSVIngestionHandler(BaseIngestionHandler):
 
     """
 
-    columns: ColumnIndices
     sample_id: str
 
     def __init__(
