@@ -1,3 +1,4 @@
+from typing import Annotated
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
@@ -164,25 +165,29 @@ async def ingest_tsv(
     db: DatabaseDependency,
     logger: LoggerDependency,
     experiment_result_id: str,
-    sample_file: UploadFile = File(...),
-    sample_id: str = None,
+    sample_id: str,
+    data: Annotated[bytes, File()],
     norm_type: NormalizationMethodEnum = None,
 ):
-    # Use sample ID param if provided, otherwise use the uploded file name
-    if sample_id is None:
-        sample_id = sample_file.filename
-
+    """
+    Ingests data for a single sample in an ExperimentResult.
+    The sample_id must be provided in the request.
+    Expected columns structure:
+        - gene_id: String feature identifier
+        - abundance: Number representing a normalised count
+        - counts: Number expressing the feature count
+        - countsFromAbundance: String ('yes' or 'no') Ignored at the moment.
+    """
     # Reading and converting uploaded RCM file to DataFrame
     handler = TSVIngestionHandler(experiment_result_id, sample_id, db, logger)
-    file_bytes = sample_file.file.read()
-    handler.load_dataframe(file_bytes)
+    handler.load_dataframe(data)
     await handler.ingest(norm_type)
 
     return {"message": "Ingestion completed successfully"}
 
 
 @experiment_router.post(
-    "/{experiment_result_id}/ingest/matrix",
+    "/{experiment_result_id}/ingest",
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
