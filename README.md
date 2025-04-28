@@ -223,3 +223,8 @@ To pull an image, or reference it in a compose file, use this pattern:
 ```shell
 docker pull ghcr.io/bento-platform/takuan:<TAG>
 ```
+
+# Examples
+
+List of example scripts to interact with a Takuan API:
+- [Ingesting single sample TSV data](./examples/ingestion.md)
