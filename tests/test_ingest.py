@@ -107,4 +107,9 @@ def test_normalize_tpm(test_client: TestClient, authz_headers, db_cleanup, db_wi
                 files=[("gene_lengths_file", file)],
                 headers=authz_headers,
             )
-            assert response.status_code == status.HTTP_200_OK
+
+            if method is NormalizationMethodEnum.fpkm:
+                # TODO: expect 200 once implemented
+                assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
+            else:
+                assert response.status_code == status.HTTP_200_OK

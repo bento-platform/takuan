@@ -147,11 +147,11 @@ class TSVIngestionHandler(BaseIngestionHandler):
         for _, row in self.df.iterrows():
             expressions.append(
                 GeneExpression(
-                    gene_code=row[0],
+                    gene_code=row.iloc[0],
                     sample_id=self.sample_id,
                     experiment_result_id=self.experiment_result_id,
-                    raw_count=row[2],
-                    **{f"{count_type.value}_count": row[1]},
+                    raw_count=row.iloc[2],
+                    **{f"{count_type.value}_count": row.iloc[1]},
                 )
             )
         return expressions

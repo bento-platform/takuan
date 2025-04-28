@@ -73,7 +73,7 @@ async def test_transaction(db: Database, db_cleanup):
     async with db.transaction_connection() as conn:
         try:
             await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)
-            await db.create_or_update_gene_expressions([TEST_GENE_EXPRESSION, TEST_GENE_EXPRESSION], conn)
+            await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)  # trigger a duplicate key db exception
             assert False
         except Exception:
             assert True
