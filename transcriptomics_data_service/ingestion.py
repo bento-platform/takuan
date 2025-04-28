@@ -131,10 +131,8 @@ class TSVIngestionHandler(BaseIngestionHandler):
         sample_id: str,
         db: DatabaseDependency,
         logger: Logger,
-        columns: ColumnIndices = ColumnIndices(),
     ):
         self.sample_id = sample_id
-        self.columns = columns
         super().__init__(experiment_result_id, db, logger)
 
     def load_dataframe(self, data: bytes):
