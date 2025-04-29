@@ -1,7 +1,7 @@
 import requests
 
 # Example values, adapt to your needs
-MY_EXPERIMENT_ID = "A UNIQUE ID FOR YOUR EXP"
+MY_EXPERIMENT_ID = "HELPING-DAISIE"
 MY_ASSEMBLY_ID = "GCF_000001405.40"
 MY_ASSEMBLY_NAME = "GRCh38.p14"
 
@@ -46,10 +46,12 @@ r_file_data = requests.post(
     f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single?sample_id={file_sample}&norm_type=tpm",
     data=dict(data=file_data),
 )
+print(f"Ingest status code (file bytes): {r_file_data.status_code}")
 
 # Ingests string data with abundance column as TMM normalized
 string_sample = "SAMPLE_54321"
 r_string_data = requests.post(
     f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single?sample_id={string_sample}&norm_type=tmm",
-    data=dict(data=file_data),
+    data=dict(data=string_data),
 )
+print(f"Ingest status code (encoded string): {r_string_data.status_code}")
