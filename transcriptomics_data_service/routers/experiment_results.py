@@ -96,7 +96,7 @@ async def create_experiment(db: DatabaseDependency, logger: LoggerDependency, ex
         err_msg = f"Duplicate key error: experiment_result_id={exp.experiment_result_id} already exists."
         logger.warning(err_msg)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=err_msg,
         )
     logger.info(f"Created experiment row with ID: {exp.experiment_result_id}")
