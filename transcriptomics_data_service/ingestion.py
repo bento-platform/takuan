@@ -157,11 +157,11 @@ def parse_tsv(data: bytes, logger: Logger) -> pd.DataFrame:
         return df
 
     except pd.errors.ParserError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing TSV: {e}")
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Value error in CSV data: {e}",
+            detail=f"Value error in TSV data: {e}",
         )
 
 
