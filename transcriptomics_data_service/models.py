@@ -22,12 +22,14 @@ TPM = "tpm"
 TMM = "tmm"
 GETMM = "getmm"
 RAW = "raw"
+FPKM = "fpkm"
 
 
 class NormalizationMethodEnum(str, Enum):
     tpm = TPM
     tmm = TMM
     getmm = GETMM
+    fpkm = FPKM
 
 
 class CountTypesEnum(str, Enum):
@@ -36,6 +38,7 @@ class CountTypesEnum(str, Enum):
     tpm = TPM
     tmm = TMM
     getmm = GETMM
+    fpkm = FPKM
 
 
 #####################################
@@ -76,10 +79,11 @@ class GeneExpression(BaseModel):
     gene_code: str = Field(..., min_length=1, max_length=255, description="Feature identifier")
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
-    raw_count: int = Field(..., ge=0, description="The raw count for the given feature")
+    raw_count: float | None = Field(None, ge=0, description="The raw count for the given feature")
     tpm_count: float | None = Field(None, ge=0, description="TPM normalized count")
     tmm_count: float | None = Field(None, ge=0, description="TMM normalized count")
     getmm_count: float | None = Field(None, ge=0, description="GETMM normalized count")
+    fpkm_count: float | None = Field(None, ge=0, description="FPKM normalized count")
 
 
 class GeneExpressionData(BaseModel):
@@ -102,6 +106,19 @@ class ExpressionQueryBody(PaginatedRequest):
 class GeneExpressionResponse(PaginatedResponse):
     query: ExpressionQueryBody = Field(..., description="The query that produced this response")
     expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
+
+
+class GeneExpressionMapper(BaseModel):
+    """
+    Mapping class for flexible handling of CSV/TSV files with different columns.
+    """
+
+    feature_col: str
+    raw_count_col: str
+    tpm_count_col: str
+    tmm_count_col: str
+    getmm_count_col: str
+    fpkm_count_col: str
 
 
 #####################################
