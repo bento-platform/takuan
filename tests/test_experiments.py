@@ -40,7 +40,7 @@ def test_create_experiment_duplicate_500(exp, test_client, authz_headers, db_cle
         headers=authz_headers,
         data=exp.model_dump_json(),
     )
-    assert response_dup.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response_dup.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
