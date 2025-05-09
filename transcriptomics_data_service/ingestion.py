@@ -4,7 +4,11 @@ from fastapi import HTTPException, status
 import pandas as pd
 
 from transcriptomics_data_service.db import DatabaseDependency
-from transcriptomics_data_service.models import CountTypesEnum, GeneExpression
+from transcriptomics_data_service.models import (
+    CountTypesEnum,
+    GeneExpression,
+    GeneExpressionMapper,
+)
 
 
 class BaseIngestionHandler:
@@ -30,7 +34,7 @@ class BaseIngestionHandler:
 
     def load_dataframe(self, data: bytes):
         """
-        Reads the file data and loads it inside a dataframe.
+        Reads the file data and loads it inside a dataframe in the 'df' attribute.
         """
         raise NotImplementedError()
 
@@ -54,15 +58,23 @@ class BaseIngestionHandler:
                 detail="No experiment result found for provided ID",
             )
 
-        # Parse expressions, implementation dependent (CSV/TSV)
+        # Parse expressions
         expressions = self.dataframe_to_expressions(count_type)
         async with self.db.transaction_connection() as conn:
             await self.db.create_or_update_gene_expressions(expressions, conn)
 
+    def _check_index_duplicates(self, index: pd.Index):
+        duplicated = index.duplicated()
+        if duplicated.any():
+            dupes = index[duplicated]
+            err_msg = f"Found duplicated {index.name}: {dupes.values}"
+            self.logger.debug(err_msg)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
-class CSVIngestionHandler(BaseIngestionHandler):
+
+class RCMIngestionHandler(BaseIngestionHandler):
     """
-    CSV format is for Raw-Count-Matrix (RCM) ingestion, where each column belongs to a sample,
+    For Raw-Count-Matrix (RCM) ingestion, where each column belongs to a sample,
     and each row to a feature (gene ID, gene name, Ensembl ID, ...).
 
     Cells are the raw count for the sample/feature pair:
@@ -75,7 +87,30 @@ class CSVIngestionHandler(BaseIngestionHandler):
         """
         Reads the bytes of a CSV file into a dataframe.
         """
-        self.df = _parse_csv(data, self.logger)
+        buffer = StringIO(data.decode("utf-8"))
+        buffer.seek(0)
+        try:
+            # sep=None to infer separator (handle CSV and TSV)
+            df = pd.read_csv(buffer, index_col=0, header=0, sep=None)
+
+            # Validating for unique Gene and Sample IDs
+            self._check_index_duplicates(df.index)  # Gene IDs
+            self._check_index_duplicates(df.columns)  # Sample IDs
+
+            # Ensuring raw count values are integers
+            df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
+            self.df = df
+
+        except pd.errors.ParserError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error parsing data: {e}",
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Value error in data: {e}",
+            )
 
     def dataframe_to_expressions(self, count_type: CountTypesEnum):
         return [
@@ -90,7 +125,7 @@ class CSVIngestionHandler(BaseIngestionHandler):
         ]
 
 
-class TSVIngestionHandler(BaseIngestionHandler):
+class SampleIngestionHandler(BaseIngestionHandler):
     """
     TSV format ingestion is for single sample files ONLY.
 
@@ -114,6 +149,7 @@ class TSVIngestionHandler(BaseIngestionHandler):
     """
 
     sample_id: str
+    mapper: GeneExpressionMapper
 
     def __init__(
         self,
@@ -125,73 +161,73 @@ class TSVIngestionHandler(BaseIngestionHandler):
         self.sample_id = sample_id
         super().__init__(experiment_result_id, db, logger)
 
-    def load_dataframe(self, data: bytes):
-        self.df = parse_tsv(data, self.logger)
+    def load_dataframe(self, data: bytes, mapper: GeneExpressionMapper | None):
+        buffer = StringIO(data.decode("utf-8"))
+        buffer.seek(0)
+        try:
+            # sep=None to infer separator (handle CSV and TSV)
+            df = pd.read_csv(
+                buffer,
+                header=0,
+                sep=None,
+            )
+
+            # Validating for unique feature IDs
+            self._check_index_duplicates(df.index)
+
+            self.df = df
+            self.mapper = mapper
+
+        except pd.errors.ParserError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error parsing data: {e}",
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Value error in data: {e}",
+            )
 
     def dataframe_to_expressions(self, count_type: CountTypesEnum):
         # gene_id           abundance       counts      length      countsFromAbundance
         # ENSG00000000003   0.0447787       29.6875     3616.22     no
         expressions = []
         for _, row in self.df.iterrows():
-            expressions.append(
-                GeneExpression(
-                    gene_code=row.iloc[0],
-                    sample_id=self.sample_id,
-                    experiment_result_id=self.experiment_result_id,
-                    raw_count=row.iloc[2],
-                    **{f"{count_type.value}_count": row.iloc[1]},
-                )
+            expr = GeneExpression(
+                # required colums
+                experiment_result_id=self.experiment_result_id,
+                sample_id=self.sample_id,
+                gene_code=row.loc[self.mapper.feature_col],
+                # optional normalized data columns
+                raw_count=(row.loc[self.mapper.raw_count_col] if self.mapper.raw_count_col else None),
+                tpm_count=(row.loc[self.mapper.tpm_count_col] if self.mapper.tpm_count_col else None),
+                tmm_count=(row.loc[self.mapper.tmm_count_col] if self.mapper.tmm_count_col else None),
+                getmm_count=(row.loc[self.mapper.getmm_count_col] if self.mapper.getmm_count_col else None),
+                fpkm_count=(row.iloc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
             )
+            expressions.append(expr)
         return expressions
 
+    def _read_sample_data_df(self, data: bytes) -> pd.DataFrame:
+        buffer = StringIO(data.decode("utf-8"))
+        buffer.seek(0)
+        try:
+            # sep=None to infer separator (handle CSV and TSV)
+            df = pd.read_csv(buffer, header=0, sep=None)
 
-def parse_tsv(data: bytes, logger: Logger) -> pd.DataFrame:
-    buffer = StringIO(data.decode("utf-8"))
-    buffer.seek(0)
-    try:
-        df = pd.read_csv(buffer, header=0, sep="\t")
+            # Validating for unique feature IDs
+            self._check_index_duplicates(df.index)
 
-        # Validating for unique feature IDs
-        _check_index_duplicates(df.index, logger)
+            return df
 
-        return df
-
-    except pd.errors.ParserError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing TSV: {e}")
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Value error in TSV data: {e}",
-        )
-
-
-def _parse_csv(file_bytes: bytes, logger: Logger) -> pd.DataFrame:
-    buffer = StringIO(file_bytes.decode("utf-8"))
-    buffer.seek(0)
-    try:
-        df = pd.read_csv(buffer, index_col=0, header=0)
-
-        # Validating for unique Gene and Sample IDs
-        _check_index_duplicates(df.index, logger)  # Gene IDs
-        _check_index_duplicates(df.columns, logger)  # Sample IDs
-
-        # Ensuring raw count values are integers
-        df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
-        return df
-
-    except pd.errors.ParserError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error parsing CSV: {e}")
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Value error in CSV data: {e}",
-        )
-
-
-def _check_index_duplicates(index: pd.Index, logger: Logger):
-    duplicated = index.duplicated()
-    if duplicated.any():
-        dupes = index[duplicated]
-        err_msg = f"Found duplicated {index.name}: {dupes.values}"
-        logger.debug(err_msg)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
+        except pd.errors.ParserError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error parsing data: {e}",
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Value error in data: {e}",
+            )

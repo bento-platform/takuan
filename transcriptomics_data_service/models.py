@@ -108,6 +108,19 @@ class GeneExpressionResponse(PaginatedResponse):
     expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
 
 
+class GeneExpressionMapper(BaseModel):
+    """
+    Mapping class for flexible handling of CSV/TSV files with different columns.
+    """
+
+    feature_col: str
+    raw_count_col: str
+    tpm_count_col: str
+    tmm_count_col: str
+    getmm_count_col: str
+    fpkm_count_col: str
+
+
 #####################################
 # GA4GH Service Info
 #####################################

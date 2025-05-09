@@ -1,15 +1,18 @@
 from typing import Annotated
 from asyncpg import UniqueViolationError
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
-from transcriptomics_data_service.ingestion import CSVIngestionHandler, TSVIngestionHandler
+from transcriptomics_data_service.ingestion import (
+    RCMIngestionHandler,
+    SampleIngestionHandler,
+)
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
     CountTypesEnum,
     ExperimentResult,
-    NormalizationMethodEnum,
+    GeneExpressionMapper,
     PaginatedRequest,
     SamplesResponse,
     FeaturesResponse,
@@ -161,13 +164,18 @@ async def delete_experiment_result(db: DatabaseDependency, experiment_result_id:
     dependencies=authz_plugin.dep_authz_ingest(),
     description="Ingest detailed counts for a single sample TSV file",
 )
-async def ingest_tsv(
+async def ingest_single(
     db: DatabaseDependency,
     logger: LoggerDependency,
     experiment_result_id: str,
     sample_id: str,
     data: Annotated[bytes, File()],
-    norm_type: NormalizationMethodEnum = None,
+    feature_col: Annotated[str, Form(description="Feature column, defaults to 'gene_id'")] = "gene_id",
+    raw_count_col: Annotated[str, Form(description="Raw count column, defaults to 'counts'")] = "counts",
+    tpm_count_col: Annotated[str | None, Form(description="TPM count column")] = "",
+    tmm_count_col: Annotated[str | None, Form(description="TMM count column")] = "",
+    getmm_count_col: Annotated[str | None, Form(description="GETMM count column")] = "",
+    fpkm_count_col: Annotated[str | None, Form(description="FPKM count column")] = "",
 ):
     """
     Ingests data for a single sample in an ExperimentResult.
@@ -179,9 +187,20 @@ async def ingest_tsv(
         - countsFromAbundance: String ('yes' or 'no') Ignored at the moment.
     """
     # Reading and converting uploaded RCM file to DataFrame
-    handler = TSVIngestionHandler(experiment_result_id, sample_id, db, logger)
-    handler.load_dataframe(data)
-    await handler.ingest(norm_type)
+    handler = SampleIngestionHandler(experiment_result_id, sample_id, db, logger)
+
+    # Cannot use this Pydantic model as a Form parameter with multipart
+    # https://fastapi.tiangolo.com/tutorial/request-forms-and-files/#define-file-and-form-parameters
+    data_mapper = GeneExpressionMapper(
+        feature_col=feature_col,
+        raw_count_col=raw_count_col,
+        tpm_count_col=tpm_count_col,
+        tmm_count_col=tmm_count_col,
+        getmm_count_col=getmm_count_col,
+        fpkm_count_col=fpkm_count_col,
+    )
+    handler.load_dataframe(data, data_mapper)
+    await handler.ingest()
 
     return {"message": "Ingestion completed successfully"}
 
@@ -205,7 +224,7 @@ async def ingest(
 
     # Reading and converting uploaded RCM file to DataFrame
     file_bytes = rcm_file.file.read()
-    handler = CSVIngestionHandler(experiment_result_id, db, logger)
+    handler = RCMIngestionHandler(experiment_result_id, db, logger)
     handler.load_dataframe(file_bytes)
     await handler.ingest(count_type)
 
