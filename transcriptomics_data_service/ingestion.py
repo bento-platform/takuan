@@ -161,6 +161,13 @@ class SampleIngestionHandler(BaseIngestionHandler):
         self.sample_id = sample_id
         super().__init__(experiment_result_id, db, logger)
 
+    def _validate_mapper_field(self, df: pd.DataFrame, mapping: str | None):
+        if mapping and mapping not in df:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error parsing data with mapper: field '{mapping}' not in the data file",
+            )
+
     def load_dataframe(self, data: bytes, mapper: GeneExpressionMapper | None):
         buffer = StringIO(data.decode("utf-8"))
         buffer.seek(0)
@@ -174,6 +181,13 @@ class SampleIngestionHandler(BaseIngestionHandler):
 
             # Validating for unique feature IDs
             self._check_index_duplicates(df.index)
+
+            # validate mapping fields exist in the file's headers
+            self._validate_mapper_field(df, mapper.raw_count_col)
+            self._validate_mapper_field(df, mapper.tpm_count_col)
+            self._validate_mapper_field(df, mapper.tmm_count_col)
+            self._validate_mapper_field(df, mapper.getmm_count_col)
+            self._validate_mapper_field(df, mapper.fpkm_count_col)
 
             self.df = df
             self.mapper = mapper
@@ -204,7 +218,7 @@ class SampleIngestionHandler(BaseIngestionHandler):
                 tpm_count=(row.loc[self.mapper.tpm_count_col] if self.mapper.tpm_count_col else None),
                 tmm_count=(row.loc[self.mapper.tmm_count_col] if self.mapper.tmm_count_col else None),
                 getmm_count=(row.loc[self.mapper.getmm_count_col] if self.mapper.getmm_count_col else None),
-                fpkm_count=(row.iloc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
+                fpkm_count=(row.loc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
             )
             expressions.append(expr)
         return expressions
