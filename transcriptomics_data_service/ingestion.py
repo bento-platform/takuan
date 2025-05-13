@@ -195,7 +195,7 @@ class SampleIngestionHandler(BaseIngestionHandler):
                     invalid_mappings.append(col_map)
 
             if invalid_mappings:
-                err_msg = f"The following provided column mappings are not in the data: {", ".join(invalid_mappings)}"
+                err_msg = f"The following provided column mappings are not in the data: {', '.join(invalid_mappings)}"
                 self.logger.warning(err_msg)
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
