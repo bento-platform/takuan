@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: ./dev.Dockerfile
+      labels:
+        - takuan.image.kind=test
     container_name: tds
     depends_on:
       - tds-db
@@ -24,6 +26,8 @@ services:
       # Use API key plugin for authz testing
       - $PWD/authz_plugins/api_key:/tds/lib
       - $PWD/authz_plugins/api_key/example.env:/tds/lib/.env # map example.env to .env
+    labels:
+      - takuan.container.kind=test
 
   tds-db:
     image: postgres:16

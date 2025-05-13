@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 export UID=$(id -u)
 
+# Take down old test containers
 docker compose -f docker-compose.test.yaml down
+# Build and run new test containers
 docker compose -f docker-compose.test.yaml up  -d --build --wait
 
+# Run tests
 docker exec --user "${UID}" tds /bin/bash -c "
     cd /tds &&
     poetry export -f requirements.txt --with dev --output requirements.txt
@@ -14,6 +17,7 @@ docker exec --user "${UID}" tds /bin/bash -c "
     coverage html
     "
 
+# Remove containers and images
 docker compose -f docker-compose.test.yaml down
-
-docker rmi transcriptomics_data_service-tds:latest
+docker system prune -f \
+    --filter "label=takuan.image.kind=test"

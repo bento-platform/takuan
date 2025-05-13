@@ -11,7 +11,6 @@ from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
 
 os.environ["CORS_ORIGINS"] = "*"
-os.environ["AUTHZ_ENABLED"] = "True"
 
 from transcriptomics_data_service.config import Config, get_config
 from transcriptomics_data_service.main import app
@@ -66,7 +65,7 @@ def test_client(db: Database):
 @pytest.fixture
 def authz_headers(config) -> HeaderTypes:
     # Valid authz header from the config
-    api_key = config.model_extra.get("api_key")
+    api_key = config.model_extra.get("api_key", "")
     return {"x-api-key": api_key}
 
 

@@ -16,24 +16,35 @@ logger = get_logger(config)
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "data")
 RCM_FILE_PATH = f"{TEST_FILES_DIR}/rcm_file.csv"
+SINGLE_SAMPLE_FILE_PATH = f"{TEST_FILES_DIR}/single_sample.csv"
 
 
-def _ingest_rcm_file(
+def _ingest_file(
     client: TestClient,
     file_path: Path,
     headers: HeaderTypes | None = None,
+    is_single_sample: bool = False,
+    form_data: dict | None = None,
 ):
+    url = f"/experiment/{TEST_EXPERIMENT_RESULT.experiment_result_id}/ingest"
+    if is_single_sample:
+        url = f"{url}/single"
+        file_key = "data"
+    else:
+        file_key = "rcm_file"
+
     with open(file_path, "rb") as file:
         res = client.post(
-            url=f"/experiment/{TEST_EXPERIMENT_RESULT.experiment_result_id}/ingest",
-            files=[("rcm_file", file)],
+            url=url,
+            files=[(file_key, file)],
             headers=headers,
+            data=form_data,
         )
     return res
 
 
 def test_ingest_unauthorized(test_client, authz_headers_bad, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=RCM_FILE_PATH,
         headers=authz_headers_bad,
@@ -42,7 +53,7 @@ def test_ingest_unauthorized(test_client, authz_headers_bad, db_cleanup, db_with
 
 
 def test_ingest_authorized(test_client, authz_headers, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=RCM_FILE_PATH,
         headers=authz_headers,
@@ -51,7 +62,7 @@ def test_ingest_authorized(test_client, authz_headers, db_cleanup, db_with_exper
 
 
 def test_ingest_authorized_duplicate(test_client, authz_headers, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_duplicates.csv",
         headers=authz_headers,
@@ -61,7 +72,7 @@ def test_ingest_authorized_duplicate(test_client, authz_headers, db_cleanup, db_
 
 def test_ingest_404(test_client, authz_headers, db_cleanup):
     # db_with_experiment fixture not included, targeted experiment doesn't exist
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=RCM_FILE_PATH,
         headers=authz_headers,
@@ -70,7 +81,7 @@ def test_ingest_404(test_client, authz_headers, db_cleanup):
 
 
 def test_ingest_parser_error(test_client, authz_headers, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_bad_values.csv",
         headers=authz_headers,
@@ -79,7 +90,7 @@ def test_ingest_parser_error(test_client, authz_headers, db_cleanup, db_with_exp
 
 
 def test_ingest_invalid_csv(test_client, authz_headers, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/rcm_file_bad_column.csv",
         headers=authz_headers,
@@ -95,7 +106,7 @@ def test_normalize_403(test_client: TestClient, authz_headers_bad, db_cleanup, d
 
 
 def test_normalize_tpm(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
-    response = _ingest_rcm_file(
+    response = _ingest_file(
         test_client,
         file_path=RCM_FILE_PATH,
         headers=authz_headers,
@@ -113,3 +124,37 @@ def test_normalize_tpm(test_client: TestClient, authz_headers, db_cleanup, db_wi
                 assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
             else:
                 assert response.status_code == status.HTTP_200_OK
+
+
+def test_ingest_single_sample(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
+    response = _ingest_file(
+        test_client,
+        file_path=SINGLE_SAMPLE_FILE_PATH,
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data=dict(
+            sample_id="my-sample-id",
+            feature_col="gene_id",
+            raw_count_col="count",
+            tpm_count_col="tpm",
+            tmm_count_col="tmm",
+            getmm_count_col="getmm",
+            fpkm_count_col="fpkm",
+        ),
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_ingest_single_sample_bad_mapping(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
+    response = _ingest_file(
+        test_client,
+        file_path=SINGLE_SAMPLE_FILE_PATH,
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data={
+            "sample_id": "my-sample-id",
+            "feature_col": "gene_id",
+            "raw_count_col": "bad_count_MISSING",
+        },
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
