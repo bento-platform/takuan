@@ -11,6 +11,7 @@ from transcriptomics_data_service.db import Database, get_db
 from transcriptomics_data_service.logger import get_logger
 
 os.environ["CORS_ORIGINS"] = "*"
+os.environ["AUTHZ_ENABLED"] = "True"
 
 from transcriptomics_data_service.config import Config, get_config
 from transcriptomics_data_service.main import app

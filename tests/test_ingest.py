@@ -16,7 +16,7 @@ logger = get_logger(config)
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "data")
 RCM_FILE_PATH = f"{TEST_FILES_DIR}/rcm_file.csv"
-SINGLE_SAMPLE_FILE_PATH = f"{TEST_FILES_DIR}/single_sample.csv"
+SINGLE_SAMPLE_FILE_PATH = f"{TEST_FILES_DIR}/single_sample_detailed.csv"
 
 
 def _ingest_file(
@@ -134,7 +134,7 @@ def test_ingest_single_sample(test_client: TestClient, authz_headers, db_cleanup
         is_single_sample=True,
         form_data=dict(
             sample_id="my-sample-id",
-            feature_col="gene_id",
+            feature_col="feature",
             raw_count_col="count",
             tpm_count_col="tpm",
             tmm_count_col="tmm",
@@ -153,7 +153,7 @@ def test_ingest_single_sample_bad_mapping(test_client: TestClient, authz_headers
         is_single_sample=True,
         form_data={
             "sample_id": "my-sample-id",
-            "feature_col": "gene_id",
+            "feature_col": "feature",
             "raw_count_col": "bad_count_MISSING",
         },
     )

@@ -1,7 +1,7 @@
 import requests
 
 # Example values, adapt to your needs
-MY_EXPERIMENT_ID = "HELPING-DAISIE"
+MY_EXPERIMENT_ID = "EXP_12345"
 MY_ASSEMBLY_ID = "GCF_000001405.40"
 MY_ASSEMBLY_NAME = "GRCh38.p14"
 
@@ -22,12 +22,27 @@ r = requests.post(
     },
 )
 
-##### Load data to send in ingestion request
+##### Load data to send in ingestion requests
 
 # Bytes can be read from a file
 file_data: bytes = b""
 with open("examples/my-sample-example.tsv", "rb") as data_file:
+    # TSV HEADERS: gene_id	abundance	counts	length	countsFromAbundance
     file_data = data_file.read()
+
+# Ingests file data with 'abundance' column as TPM normalized
+file_sample = "SAMPLE_12345"
+r_file_data = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": file_data},
+    data={
+        "sample_id": file_sample,
+        # column mappings
+        "raw_count_col": "counts",
+        "tpm_count_col": "abundance",
+    },
+)
+print(f"Ingest status code (TSV file bytes): {r_file_data.status_code}")
 
 # Or they can be converted from a string
 tsv_string_data = """gene_id	abundance	counts	length	countsFromAbundance
@@ -38,20 +53,48 @@ ENSG00000001084	4.3898788	15743.07438	2625.59540961572	no
 """
 string_data = bytes(tsv_string_data, "utf-8")
 
-##### Ingest the data (TSV)!
-
-# Ingests file data with abundance column as TPM normalized
-file_sample = "SAMPLE_12345"
-r_file_data = requests.post(
-    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single?sample_id={file_sample}&norm_type=tpm",
-    data=dict(data=file_data),
-)
-print(f"Ingest status code (file bytes): {r_file_data.status_code}")
-
-# Ingests string data with abundance column as TMM normalized
-string_sample = "SAMPLE_54321"
+# Ingests string data with 'abundance' column as TMM normalized
 r_string_data = requests.post(
-    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single?sample_id={string_sample}&norm_type=tmm",
-    data=dict(data=string_data),
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": string_data},
+    data={
+        "sample_id": "SAMPLE_54321",
+        # column mappings
+        "raw_count_col": "counts",
+        "tmm_count_col": "abundance",
+    },
 )
-print(f"Ingest status code (encoded string): {r_string_data.status_code}")
+print(f"Ingest status code (encoded TSV string): {r_string_data.status_code}")
+
+### /ingestion/single also handles CSV
+csv_sample_id = "SAMPLE_CSV_9876"
+csv_file_data: bytes = b""
+with open("tests/data/single_sample_detailed.csv", "rb") as file:
+    # CSV headers: feature,count,tpm,tmm,getmm,fpkm
+    csv_file_data = file.read()
+
+# Will fail, default feature_col and raw_count_col mappers are not in the CSV file
+r_csv_data = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": csv_file_data},
+    data={
+        "sample_id": csv_sample_id,
+        # mapper defaults
+        # "feature_col": "gene_id",
+        # "raw_count_col": "counts"
+    },
+)
+print(f"Ingest status code, needs map (CSV file bytes): {r_csv_data.status_code}")
+print(f"    {r_csv_data.json()['detail']}")
+
+r_csv_data = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": csv_file_data},
+    data={
+        "sample_id": csv_sample_id,
+        # column mappings
+        "feature_col": "feature",
+        "raw_count_col": "count",
+    },
+)
+print(f"Ingest status code, correct mappings (CSV file bytes): {r_csv_data.status_code}")
