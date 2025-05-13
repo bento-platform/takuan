@@ -7,7 +7,7 @@ This page presents simple Python examples that allow to programatically ingest d
 ## Prerequisites
 - A running Takuan deployment
 - Transcriptomic data files
-  - Single-sample TSV files
+  - Single-sample CSV/TSV files
   - OR multi-sample CSV file
 - Python and a terminal
 

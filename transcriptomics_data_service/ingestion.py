@@ -161,12 +161,11 @@ class SampleIngestionHandler(BaseIngestionHandler):
         self.sample_id = sample_id
         super().__init__(experiment_result_id, db, logger)
 
-    def _validate_mapper_field(self, df: pd.DataFrame, mapping: str | None):
-        if mapping and mapping not in df:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Error parsing data with mapper: field '{mapping}' not in the data file",
-            )
+    def _validate_mapper_field(self, df: pd.DataFrame, mapping: str | None) -> bool:
+        """
+        Returns True if the mapping is not present in the file's headers
+        """
+        return mapping and mapping not in df
 
     def load_dataframe(self, data: bytes, mapper: GeneExpressionMapper | None):
         buffer = StringIO(data.decode("utf-8"))
@@ -177,10 +176,28 @@ class SampleIngestionHandler(BaseIngestionHandler):
                 buffer,
                 header=0,
                 sep=None,
+                engine="python",  # C engine cannot infer if data is CSV or TSV
             )
 
             # Validating for unique feature IDs
             self._check_index_duplicates(df.index)
+
+            invalid_mappings: list[str] = []
+            for col_map in [
+                mapper.feature_col,
+                mapper.raw_count_col,
+                mapper.tpm_count_col,
+                mapper.tmm_count_col,
+                mapper.getmm_count_col,
+                mapper.fpkm_count_col,
+            ]:
+                if self._validate_mapper_field(df, col_map):
+                    invalid_mappings.append(col_map)
+
+            if invalid_mappings:
+                err_msg = f"The following provided column mappings are not in the data: {", ".join(invalid_mappings)}"
+                self.logger.warning(err_msg)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
             # validate mapping fields exist in the file's headers
             self._validate_mapper_field(df, mapper.raw_count_col)

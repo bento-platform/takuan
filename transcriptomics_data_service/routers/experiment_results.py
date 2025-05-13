@@ -170,12 +170,12 @@ async def ingest_single(
     experiment_result_id: str,
     data: Annotated[bytes, File()],
     sample_id: Annotated[str, Form(description="Sample unique identifier")],
-    feature_col: Annotated[str, Form(description="Feature column, defaults to 'gene_id'")] = "gene_id",
-    raw_count_col: Annotated[str, Form(description="Raw count column, defaults to 'counts'")] = "counts",
-    tpm_count_col: Annotated[str | None, Form(description="TPM count column")] = "",
-    tmm_count_col: Annotated[str | None, Form(description="TMM count column")] = "",
-    getmm_count_col: Annotated[str | None, Form(description="GETMM count column")] = "",
-    fpkm_count_col: Annotated[str | None, Form(description="FPKM count column")] = "",
+    feature_col: Annotated[str, Form(description="Feature column mapper, defaults to 'gene_id'")] = "gene_id",
+    raw_count_col: Annotated[str | None, Form(description="Raw count column mapper")] = "",
+    tpm_count_col: Annotated[str | None, Form(description="TPM count column mapper")] = "",
+    tmm_count_col: Annotated[str | None, Form(description="TMM count column mapper")] = "",
+    getmm_count_col: Annotated[str | None, Form(description="GETMM count column mapper")] = "",
+    fpkm_count_col: Annotated[str | None, Form(description="FPKM count column mapper")] = "",
 ):
     """
     Ingests data for a single sample in an ExperimentResult.
