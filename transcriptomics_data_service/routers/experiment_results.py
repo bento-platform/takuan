@@ -22,6 +22,8 @@ __all__ = ["experiment_router"]
 
 experiment_router = APIRouter(prefix="/experiment", dependencies=authz_plugin.dep_experiment_result_router())
 
+DEFAULT_PAGINATION = PaginatedRequest(page=1, page_size=100)
+
 
 async def get_experiment_samples_handler(
     experiment_result_id: str,
@@ -127,9 +129,9 @@ async def get_experiment_result(db: DatabaseDependency, experiment_result_id: st
 )
 async def post_experiment_samples(
     experiment_result_id: str,
-    params: PaginatedRequest,
     db: DatabaseDependency,
     logger: LoggerDependency,
+    params: PaginatedRequest = DEFAULT_PAGINATION,
 ):
     return await get_experiment_samples_handler(experiment_result_id, params, db, logger)
 
@@ -142,9 +144,9 @@ async def post_experiment_samples(
 )
 async def post_experiment_features(
     experiment_result_id: str,
-    params: PaginatedRequest,
     db: DatabaseDependency,
     logger: LoggerDependency,
+    params: PaginatedRequest = DEFAULT_PAGINATION,
 ):
     return await get_experiment_features_handler(experiment_result_id, params, db, logger)
 
