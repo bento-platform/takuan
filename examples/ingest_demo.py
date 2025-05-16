@@ -1,3 +1,4 @@
+import json
 import requests
 
 # Example values, adapt to your needs
@@ -109,11 +110,12 @@ ENSG00000001084, 4.3898788, 15743.07438, 2625.59540961572
 """
 multi_norm_data = bytes(multi_norm_data_csv, "utf-8")
 
+MULTI_NORM_SAMPLE_ID = "MULTI_NORM_1234"
 r_multi_norm = requests.post(
     f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
     files={"data": multi_norm_data},
     data={
-        "sample_id": "MULTI_NORM_1234",
+        "sample_id": MULTI_NORM_SAMPLE_ID,
         # Column mappings
         "feature_col": "gene_id",
         "tpm_count_col": "tpm",
@@ -122,3 +124,7 @@ r_multi_norm = requests.post(
     },
 )
 print(f"Status for multiple normalised values ingestion: {r_multi_norm.status_code}")
+
+r_query = requests.post(f"{TAKUAN_ENDPOINT}/expressions", json={"sample_ids": [MULTI_NORM_SAMPLE_ID], "method": "fpkm"})
+print("Get expressions values from the /expressions endpoint")
+print(json.dumps(r_query.json(), indent=2))
