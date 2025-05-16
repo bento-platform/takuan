@@ -337,7 +337,7 @@ class Database(PgAsyncDatabase):
         genes: List[str] | None = None,
         experiments: List[str] | None = None,
         sample_ids: List[str] | None = None,
-        method: CountTypesEnum = CountTypesEnum.raw,
+        method: CountTypesEnum | None = None,
         pagination: PaginatedRequest | None = None,
         mapping: GeneExpression | GeneExpressionData = GeneExpression,
     ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
@@ -373,7 +373,8 @@ class Database(PgAsyncDatabase):
                 param_counter += 1
 
             # Only get rows where the chosen method count is not null
-            conditions.append(f"{method.value}_count IS NOT NULL")
+            if method and method.value:
+                conditions.append(f"{method.value}_count IS NOT NULL")
 
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
@@ -395,7 +396,9 @@ class Database(PgAsyncDatabase):
             # For the /expressions endpoint
             # Returns a lightweight representation of a GeneExpression as GeneExpressionData,
             # which only contains the requested count type.
-            count_col = f"{method.value}_count"
+            count_col = "raw_count"
+            if method and method.value:
+                count_col = f"{method.value}_count"
             expressions = [
                 GeneExpressionData(
                     gene_code=record["gene_code"],

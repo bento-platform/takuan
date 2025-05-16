@@ -112,3 +112,19 @@ def test_expressions_query_gene(
     _expressions_query_all(
         test_client, authz_headers, status.HTTP_200_OK, {"genes": [db_with_full_expression.gene_code]}
     )
+
+
+def test_expressions_query_full(
+    test_client: TestClient,
+    authz_headers,
+    db_cleanup,
+    db_with_full_expression,
+    db_with_tpm_expression,
+    db_with_raw_expression,
+):
+    # Only 2 of the 3 GeneExpressions in the DB have a non null 'raw' count
+    response = test_client.post("/expressions?full=true", headers=authz_headers)
+    assert response.status_code == status.HTTP_200_OK
+    payload = response.json()
+    assert "total_records" in payload
+    assert payload["total_records"] == 2

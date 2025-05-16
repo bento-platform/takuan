@@ -97,15 +97,15 @@ class ExpressionQueryBody(PaginatedRequest):
     genes: List[str] | None = Field(None, description="List of gene codes to retrieve")
     experiments: List[str] | None = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: List[str] | None = Field(None, description="List of sample IDs to retrieve data from")
-    method: CountTypesEnum = Field(
-        CountTypesEnum.raw,
+    method: CountTypesEnum | None = Field(
+        None,
         description=f"Data method to retrieve: {', '.join([c.value for c in CountTypesEnum])}",
     )
 
 
 class GeneExpressionResponse(PaginatedResponse):
     query: ExpressionQueryBody = Field(..., description="The query that produced this response")
-    expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
+    expressions: List[GeneExpression] | List[GeneExpressionData] = Field(..., description="List of gene expressions")
 
 
 class GeneExpressionMapper(BaseModel):
