@@ -98,3 +98,27 @@ r_csv_data = requests.post(
     },
 )
 print(f"Ingest status code, correct mappings (CSV file bytes): {r_csv_data.status_code}")
+
+########## Ingest multiple normalized values at once
+# CSV with TPM, FPKM and GETMM normalized data
+multi_norm_data_csv = """gene_id, tpm, fpkm, getmm
+ENSG00000000938, 5.168539, 727.0001, 1814.54375737582
+ENSG00000000971, 5.33253621, 826.86235, 3328.23573203574
+ENSG00000001036, 5.298295, 6524.4007, 2383.15248504693
+ENSG00000001084, 4.3898788, 15743.07438, 2625.59540961572
+"""
+multi_norm_data = bytes(multi_norm_data_csv, "utf-8")
+
+r_multi_norm = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": multi_norm_data},
+    data={
+        "sample_id": "MULTI_NORM_1234",
+        # Column mappings
+        "feature_col": "gene_id",
+        "tpm_count_col": "tpm",
+        "fpkm_count_col": "fpkm",
+        "getmm_count_col": "getmm",
+    },
+)
+print(f"Status for multiple normalised values ingestion: {r_multi_norm.status_code}")

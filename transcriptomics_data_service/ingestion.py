@@ -2,6 +2,7 @@ from io import StringIO
 from logging import Logger
 from fastapi import HTTPException, status
 import pandas as pd
+from pydantic import ValidationError
 
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.models import (
@@ -176,12 +177,14 @@ class SampleIngestionHandler(BaseIngestionHandler):
                 buffer,
                 header=0,
                 sep=None,
+                skipinitialspace=True,
                 engine="python",  # C engine cannot infer if data is CSV or TSV
             )
 
             # Validating for unique feature IDs
             self._check_index_duplicates(df.index)
 
+            # validate mapping fields exist in the file's headers
             invalid_mappings: list[str] = []
             for col_map in [
                 mapper.feature_col,
@@ -198,13 +201,6 @@ class SampleIngestionHandler(BaseIngestionHandler):
                 err_msg = f"The following provided column mappings are not in the data: {', '.join(invalid_mappings)}"
                 self.logger.warning(err_msg)
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
-
-            # validate mapping fields exist in the file's headers
-            self._validate_mapper_field(df, mapper.raw_count_col)
-            self._validate_mapper_field(df, mapper.tpm_count_col)
-            self._validate_mapper_field(df, mapper.tmm_count_col)
-            self._validate_mapper_field(df, mapper.getmm_count_col)
-            self._validate_mapper_field(df, mapper.fpkm_count_col)
 
             self.df = df
             self.mapper = mapper
@@ -225,19 +221,24 @@ class SampleIngestionHandler(BaseIngestionHandler):
         # ENSG00000000003   0.0447787       29.6875     3616.22     no
         expressions = []
         for _, row in self.df.iterrows():
-            expr = GeneExpression(
-                # required colums
-                experiment_result_id=self.experiment_result_id,
-                sample_id=self.sample_id,
-                gene_code=row.loc[self.mapper.feature_col],
-                # optional normalized data columns
-                raw_count=(row.loc[self.mapper.raw_count_col] if self.mapper.raw_count_col else None),
-                tpm_count=(row.loc[self.mapper.tpm_count_col] if self.mapper.tpm_count_col else None),
-                tmm_count=(row.loc[self.mapper.tmm_count_col] if self.mapper.tmm_count_col else None),
-                getmm_count=(row.loc[self.mapper.getmm_count_col] if self.mapper.getmm_count_col else None),
-                fpkm_count=(row.loc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
-            )
-            expressions.append(expr)
+            try:
+                expr = GeneExpression(
+                    # required colums
+                    experiment_result_id=self.experiment_result_id,
+                    sample_id=self.sample_id,
+                    gene_code=row.loc[self.mapper.feature_col],
+                    # optional normalized data columns
+                    raw_count=(row.loc[self.mapper.raw_count_col] if self.mapper.raw_count_col else None),
+                    tpm_count=(row.loc[self.mapper.tpm_count_col] if self.mapper.tpm_count_col else None),
+                    tmm_count=(row.loc[self.mapper.tmm_count_col] if self.mapper.tmm_count_col else None),
+                    getmm_count=(row.loc[self.mapper.getmm_count_col] if self.mapper.getmm_count_col else None),
+                    fpkm_count=(row.loc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
+                )
+                expressions.append(expr)
+            except ValidationError as e:
+                details = e.errors()
+                self.logger.warning(details)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.errors())
         return expressions
 
     def _read_sample_data_df(self, data: bytes) -> pd.DataFrame:

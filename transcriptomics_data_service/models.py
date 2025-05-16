@@ -99,7 +99,7 @@ class ExpressionQueryBody(PaginatedRequest):
     sample_ids: List[str] | None = Field(None, description="List of sample IDs to retrieve data from")
     method: CountTypesEnum = Field(
         CountTypesEnum.raw,
-        description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
+        description=f"Data method to retrieve: {', '.join([c.value for c in CountTypesEnum])}",
     )
 
 
