@@ -11,6 +11,8 @@ from transcriptomics_data_service.models import (
 
 expressions_router = APIRouter(prefix="/expressions", dependencies=authz_plugin.dep_expression_router())
 
+DEFAULT_EXPRESSIONS_QUERY = ExpressionQueryBody(page=1, page_size=100, method="raw")
+
 
 async def get_expressions_handler(
     query_body: ExpressionQueryBody,
@@ -58,9 +60,9 @@ async def get_expressions_handler(
     dependencies=authz_plugin.dep_authz_expressions_list(),
 )
 async def get_expressions_post(
-    params: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
+    params: ExpressionQueryBody = DEFAULT_EXPRESSIONS_QUERY,
 ):
     """
     Retrieve gene expression data via POST request.

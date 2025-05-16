@@ -252,10 +252,11 @@ class Database(PgAsyncDatabase):
             gene_code=rec["gene_code"],
             sample_id=rec["sample_id"],
             experiment_result_id=rec["experiment_result_id"],
-            raw_count=rec["raw_count"],
-            tpm_count=rec["tpm_count"],
-            tmm_count=rec["tmm_count"],
-            getmm_count=rec["getmm_count"],
+            raw_count=rec["raw_count"] if rec["raw_count"] else None,
+            tpm_count=rec["tpm_count"] if rec["tpm_count"] else None,
+            tmm_count=rec["tmm_count"] if rec["tmm_count"] else None,
+            getmm_count=rec["getmm_count"] if rec["getmm_count"] else None,
+            fpkm_count=rec["fpkm_count"] if rec["fpkm_count"] else None,
         )
 
     ############################
@@ -371,8 +372,8 @@ class Database(PgAsyncDatabase):
                 params.append(sample_ids)
                 param_counter += 1
 
-            if method.value != "raw":
-                conditions.append(f"{method.value}_count IS NOT NULL")
+            # Only get rows where the chosen method count is not null
+            conditions.append(f"{method.value}_count IS NOT NULL")
 
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
