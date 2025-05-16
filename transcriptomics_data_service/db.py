@@ -348,7 +348,7 @@ class Database(PgAsyncDatabase):
         async with self.connect() as conn:
             # Query builder
             base_query = """
-                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
+                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count, fpkm_count
                 FROM gene_expressions
                 """
             count_query = "SELECT COUNT(*) FROM gene_expressions"

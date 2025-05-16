@@ -90,7 +90,7 @@ class GeneExpressionData(BaseModel):
     gene_code: str = Field(..., min_length=1, max_length=255, description="Gene code")
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample ID")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="Experiment result ID")
-    count: float = Field(..., description="Expression count")
+    count: float | None = Field(None, description="Expression count")
 
 
 class ExpressionQueryBody(PaginatedRequest):
