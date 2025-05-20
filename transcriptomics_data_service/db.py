@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 from .config import Config, ConfigDependency
+from .exceptions import TakuanDBException
 from .logger import LoggerDependency
 from .models import (
     CountTypesEnum,
@@ -234,8 +235,9 @@ class Database(PgAsyncDatabase):
             """
         try:
             await transaction_conn.executemany(query, records)
-        except Exception as e:
-            self.logger.debug(e)
+        except asyncpg.PostgresError as e:
+            self.logger.error(e)
+            raise TakuanDBException("Failed to insert gene expression records.")
         self.logger.info(f"Inserted {len(records)} gene expression records.")
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
@@ -320,17 +322,6 @@ class Database(PgAsyncDatabase):
             async with conn.transaction():
                 # operations must be made using this connection for the transaction to apply
                 yield conn
-
-    async def fetch_gene_expression(self, expression: GeneExpression) -> GeneExpression | None:
-        conn: asyncpg.Connection
-        async with self.connect() as conn:
-            query = """
-                SELECT * FROM gene_expressions
-                WHERE experiment_result_id = $1 AND gene_code = $2 AND sample_id = $3
-                """
-            args = [expression.experiment_result_id, expression.gene_code, expression.sample_id]
-            result = await conn.fetchrow(query, *args)
-        return self._deserialize_gene_expression(result) if result else None
 
     async def fetch_gene_expressions(
         self,

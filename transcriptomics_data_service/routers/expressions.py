@@ -84,6 +84,5 @@ async def get_expressions_post(
     else:
         mapping = GeneExpressionData
         if not params.method:
-            logger.warning("Using count type 'raw'")
             params.method = CountTypesEnum.raw
     return await get_expressions_handler(params, db, logger, mapping)

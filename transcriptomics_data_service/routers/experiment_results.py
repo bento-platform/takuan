@@ -99,7 +99,7 @@ async def create_experiment(db: DatabaseDependency, logger: LoggerDependency, ex
         await db.create_experiment_result(exp)
     except UniqueViolationError:
         err_msg = f"Duplicate key error: experiment_result_id={exp.experiment_result_id} already exists."
-        logger.warning(err_msg)
+        logger.error(err_msg)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err_msg,

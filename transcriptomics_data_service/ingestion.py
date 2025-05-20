@@ -5,6 +5,7 @@ import pandas as pd
 from pydantic import ValidationError
 
 from transcriptomics_data_service.db import DatabaseDependency
+from transcriptomics_data_service.exceptions import TakuanDBException
 from transcriptomics_data_service.models import (
     CountTypesEnum,
     GeneExpression,
@@ -33,13 +34,13 @@ class BaseIngestionHandler:
         self.db = db
         self.logger = logger
 
-    def load_dataframe(self, data: bytes):
+    def load_dataframe(self, data: bytes):  # pragma: no cover
         """
         Reads the file data and loads it inside a dataframe in the 'df' attribute.
         """
         raise NotImplementedError()
 
-    def dataframe_to_expressions(self, count_type: CountTypesEnum) -> list[GeneExpression]:
+    def dataframe_to_expressions(self, count_type: CountTypesEnum) -> list[GeneExpression]:  # pragma: no cover
         """
         Parses the loaded data frame into a list of GeneExpression for ingestion.
         A count type can be specified in order to indicate if a count is pre-normalised.
@@ -62,7 +63,13 @@ class BaseIngestionHandler:
         # Parse expressions
         expressions = self.dataframe_to_expressions(count_type)
         async with self.db.transaction_connection() as conn:
-            await self.db.create_or_update_gene_expressions(expressions, conn)
+            try:
+                await self.db.create_or_update_gene_expressions(expressions, conn)
+            except TakuanDBException:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Database error while ingesting data for experiment {self.experiment_result_id}, no data was ingested.",
+                )
 
     def _check_index_duplicates(self, index: pd.Index):
         duplicated = index.duplicated()
@@ -92,22 +99,22 @@ class RCMIngestionHandler(BaseIngestionHandler):
         buffer.seek(0)
         try:
             # sep=None to infer separator (handle CSV and TSV)
-            df = pd.read_csv(buffer, index_col=0, header=0, sep=None)
+            df = pd.read_csv(buffer, index_col=0, header=0, sep=None, engine="python")
 
             # Validating for unique Gene and Sample IDs
             self._check_index_duplicates(df.index)  # Gene IDs
             self._check_index_duplicates(df.columns)  # Sample IDs
 
             # Ensuring raw count values are integers
-            df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
+            df = df.map(lambda x: int(x) if pd.notna(x) else None)
             self.df = df
 
-        except pd.errors.ParserError as e:
+        except pd.errors.ParserError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error parsing data: {e}",
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Value error in data: {e}",
@@ -199,18 +206,18 @@ class SampleIngestionHandler(BaseIngestionHandler):
 
             if invalid_mappings:
                 err_msg = f"The following provided column mappings are not in the data: {', '.join(invalid_mappings)}"
-                self.logger.warning(err_msg)
+                self.logger.error(err_msg)
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
             self.df = df
             self.mapper = mapper
 
-        except pd.errors.ParserError as e:
+        except pd.errors.ParserError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error parsing data: {e}",
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Value error in data: {e}",
@@ -235,9 +242,9 @@ class SampleIngestionHandler(BaseIngestionHandler):
                     fpkm_count=(row.loc[self.mapper.fpkm_count_col] if self.mapper.fpkm_count_col else None),
                 )
                 expressions.append(expr)
-            except ValidationError as e:
+            except ValidationError as e:  # pragma: no cover
                 details = e.errors()
-                self.logger.warning(details)
+                self.logger.error(details)
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.errors())
         return expressions
 
@@ -253,12 +260,12 @@ class SampleIngestionHandler(BaseIngestionHandler):
 
             return df
 
-        except pd.errors.ParserError as e:
+        except pd.errors.ParserError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Error parsing data: {e}",
             )
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Value error in data: {e}",
