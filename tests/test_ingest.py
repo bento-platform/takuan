@@ -8,7 +8,7 @@ from transcriptomics_data_service.config import get_config
 from httpx._types import HeaderTypes
 
 from transcriptomics_data_service.logger import get_logger
-from transcriptomics_data_service.models import NormalizationMethodEnum
+from transcriptomics_data_service.models import ExpressionQueryBody, NormalizationMethodEnum
 
 
 config = get_config()
@@ -158,3 +158,99 @@ def test_ingest_single_sample_bad_mapping(test_client: TestClient, authz_headers
         },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def _assert_expression_count(
+    test_client: TestClient,
+    authz_headers,
+    query: ExpressionQueryBody,
+    expected_count: int | None = None,
+    expected_status: status = status.HTTP_200_OK,
+):
+    r = test_client.post("/expressions", headers=authz_headers, json=query.model_dump())
+    assert r.status_code == expected_status
+    if expected_status == status.HTTP_200_OK and expected_count:
+        # Data is available, check counts
+        data = r.json()
+        assert data["total_records"] == expected_count
+
+
+def test_ingest_mixed_samples(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
+    # Ingest a file with TPM and FPKM columns
+    r1 = _ingest_file(
+        test_client,
+        file_path=f"{TEST_FILES_DIR}/single_sample_tpm.tsv",
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data={
+            "sample_id": "my-sample-id",
+            "raw_count_col": "counts",
+            "tpm_count_col": "abundance",
+        },
+    )
+    assert r1.status_code == status.HTTP_200_OK
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=2)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=2)
+    _assert_expression_count(
+        test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_status=status.HTTP_404_NOT_FOUND
+    )
+
+    # Same gene_id, sample and experiment, should only add FPKM counts and update TPM
+    r2 = _ingest_file(
+        test_client,
+        file_path=f"{TEST_FILES_DIR}/single_sample_tpm_fpkm.tsv",
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data={
+            "sample_id": "my-sample-id",
+            "raw_count_col": "expected_count",
+            "tpm_count_col": "TPM",
+            "fpkm_count_col": "FPKM",
+        },
+    )
+    assert r2.status_code == status.HTTP_200_OK
+    # Same sample_id and experiment so TPM and RAW counts should not have changed
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=2)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=2)
+    # We should now have 2 expressions with FPKM
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_count=2)
+
+    # USING A DIFFERENT SAMPLE_ID
+    OTHER_SAMPLE_ID = "my-other-sample-id"
+    r3 = _ingest_file(
+        test_client,
+        file_path=f"{TEST_FILES_DIR}/single_sample_tpm_fpkm.tsv",
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data={
+            "sample_id": OTHER_SAMPLE_ID,
+            "raw_count_col": "expected_count",
+            "tpm_count_col": "TPM",
+            "fpkm_count_col": "FPKM",
+        },
+    )
+    assert r3.status_code == status.HTTP_200_OK
+    # Counts accross all samples should now be double since we ingested in another sample
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=4)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=4)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_count=4)
+
+    # Counts specific to my-other-sample-id should be 2
+    _assert_expression_count(
+        test_client,
+        authz_headers,
+        query=ExpressionQueryBody(method="tpm", sample_ids=[OTHER_SAMPLE_ID]),
+        expected_count=2,
+    )
+    _assert_expression_count(
+        test_client,
+        authz_headers,
+        query=ExpressionQueryBody(method="raw", sample_ids=[OTHER_SAMPLE_ID]),
+        expected_count=2,
+    )
+    _assert_expression_count(
+        test_client,
+        authz_headers,
+        query=ExpressionQueryBody(method="fpkm", sample_ids=[OTHER_SAMPLE_ID]),
+        expected_count=2,
+    )
