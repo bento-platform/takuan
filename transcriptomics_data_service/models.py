@@ -79,11 +79,11 @@ class GeneExpression(BaseModel):
     gene_code: str = Field(..., min_length=1, max_length=255, description="Feature identifier")
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
-    raw_count: float | None = Field(None, ge=0, description="The raw count for the given feature")
-    tpm_count: float | None = Field(None, ge=0, description="TPM normalized count")
-    tmm_count: float | None = Field(None, ge=0, description="TMM normalized count")
-    getmm_count: float | None = Field(None, ge=0, description="GETMM normalized count")
-    fpkm_count: float | None = Field(None, ge=0, description="FPKM normalized count")
+    raw_count: float | None = Field(None, description="The raw count for the given feature")
+    tpm_count: float | None = Field(None, description="TPM normalized count")
+    tmm_count: float | None = Field(None, description="TMM normalized count")
+    getmm_count: float | None = Field(None, description="GETMM normalized count")
+    fpkm_count: float | None = Field(None, description="FPKM normalized count")
 
 
 class GeneExpressionData(BaseModel):
