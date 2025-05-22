@@ -177,80 +177,82 @@ def _assert_expression_count(
 
 def test_ingest_mixed_samples(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
     # Ingest a file with TPM and FPKM columns
+    SAMPLE_ID_1 = "SAMPLE_ID_1"
     r1 = _ingest_file(
-        test_client,
-        file_path=f"{TEST_FILES_DIR}/single_sample_tpm.tsv",
-        headers=authz_headers,
-        is_single_sample=True,
-        form_data={
-            "sample_id": "my-sample-id",
-            "raw_count_col": "counts",
-            "tpm_count_col": "abundance",
-        },
-    )
-    assert r1.status_code == status.HTTP_200_OK
-    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=2)
-    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=2)
-    _assert_expression_count(
-        test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_status=status.HTTP_404_NOT_FOUND
-    )
-
-    # Same gene_id, sample and experiment, should only add FPKM counts and update TPM
-    r2 = _ingest_file(
         test_client,
         file_path=f"{TEST_FILES_DIR}/single_sample_tpm_fpkm.tsv",
         headers=authz_headers,
         is_single_sample=True,
         form_data={
-            "sample_id": "my-sample-id",
+            "sample_id": SAMPLE_ID_1,
+            "feature_col": "gene_id",
             "raw_count_col": "expected_count",
             "tpm_count_col": "TPM",
             "fpkm_count_col": "FPKM",
         },
     )
-    assert r2.status_code == status.HTTP_200_OK
-    # Same sample_id and experiment so TPM and RAW counts should not have changed
+    assert r1.status_code == status.HTTP_200_OK
+    # Ingested 2 new expressions for a new sample, we expect 2 for each count
     _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=2)
     _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=2)
-    # We should now have 2 expressions with FPKM
     _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_count=2)
 
-    # USING A DIFFERENT SAMPLE_ID
-    OTHER_SAMPLE_ID = "my-other-sample-id"
-    r3 = _ingest_file(
+    # Same gene_id, sample and experiment, should only add FPKM counts and update TPM
+    SAMPLE_ID_2 = "SAMPLE_ID_2"
+    r2 = _ingest_file(
         test_client,
-        file_path=f"{TEST_FILES_DIR}/single_sample_tpm_fpkm.tsv",
+        file_path=f"{TEST_FILES_DIR}/single_sample_tpm.tsv",
         headers=authz_headers,
         is_single_sample=True,
         form_data={
-            "sample_id": OTHER_SAMPLE_ID,
+            "sample_id": SAMPLE_ID_2,
+            "feature_col": "gene_id",
+            "raw_count_col": "counts",
+            "tpm_count_col": "abundance",
+        },
+    )
+    assert r2.status_code == status.HTTP_200_OK
+    # Ingested 2 new expressions for a new sample, we expect 4 for each count
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=4)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=4)
+    # We should now have 2 expressions with FPKM
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_count=2)
+
+    # Upsert FPKM values into SAMPLE_ID_1
+    r3 = _ingest_file(
+        test_client,
+        file_path=f"{TEST_FILES_DIR}/single_sample_tpm_fpkm_2.tsv",
+        headers=authz_headers,
+        is_single_sample=True,
+        form_data={
+            "sample_id": SAMPLE_ID_1,
             "raw_count_col": "expected_count",
             "tpm_count_col": "TPM",
             "fpkm_count_col": "FPKM",
         },
     )
     assert r3.status_code == status.HTTP_200_OK
-    # Counts accross all samples should now be double since we ingested in another sample
-    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=4)
-    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=4)
+    # Counts accross all samples should now have been incremented by 2
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="tpm"), expected_count=6)
+    _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="raw"), expected_count=6)
     _assert_expression_count(test_client, authz_headers, query=ExpressionQueryBody(method="fpkm"), expected_count=4)
 
-    # Counts specific to my-other-sample-id should be 2
+    # Counts specific to SAMPLE_ID_1 should all be 4 now
     _assert_expression_count(
         test_client,
         authz_headers,
-        query=ExpressionQueryBody(method="tpm", sample_ids=[OTHER_SAMPLE_ID]),
-        expected_count=2,
+        query=ExpressionQueryBody(method="tpm", sample_ids=[SAMPLE_ID_1]),
+        expected_count=4,
     )
     _assert_expression_count(
         test_client,
         authz_headers,
-        query=ExpressionQueryBody(method="raw", sample_ids=[OTHER_SAMPLE_ID]),
-        expected_count=2,
+        query=ExpressionQueryBody(method="raw", sample_ids=[SAMPLE_ID_1]),
+        expected_count=4,
     )
     _assert_expression_count(
         test_client,
         authz_headers,
-        query=ExpressionQueryBody(method="fpkm", sample_ids=[OTHER_SAMPLE_ID]),
-        expected_count=2,
+        query=ExpressionQueryBody(method="fpkm", sample_ids=[SAMPLE_ID_1]),
+        expected_count=4,
     )
