@@ -114,11 +114,11 @@ class GeneExpressionMapper(BaseModel):
     """
 
     feature_col: str
-    raw_count_col: str
-    tpm_count_col: str
-    tmm_count_col: str
-    getmm_count_col: str
-    fpkm_count_col: str
+    raw_count_col: str | None = None
+    tpm_count_col: str | None = None
+    tmm_count_col: str | None = None
+    getmm_count_col: str | None = None
+    fpkm_count_col: str | None = None
 
 
 #####################################

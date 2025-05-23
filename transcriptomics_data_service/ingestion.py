@@ -1,5 +1,6 @@
 from io import StringIO
 from logging import Logger
+from typing import Literal
 from fastapi import HTTPException, status
 import pandas as pd
 from pydantic import ValidationError
@@ -47,9 +48,9 @@ class BaseIngestionHandler:
         """
         raise NotImplementedError()
 
-    async def ingest(self, count_type: CountTypesEnum = CountTypesEnum.raw.value):
+    async def ingest(self, count_type: CountTypesEnum = CountTypesEnum.raw.value) -> int | None:
         """
-        Writes the GeneExpressions to the database.
+        Writes the GeneExpressions to the database, returning the number of rows created.
         """
 
         # Check that the experiment exists
@@ -64,7 +65,8 @@ class BaseIngestionHandler:
         expressions = self.dataframe_to_expressions(count_type)
         async with self.db.transaction_connection() as conn:
             try:
-                await self.db.create_or_update_gene_expressions(expressions, conn)
+                n_created = await self.db.create_or_update_gene_expressions(expressions, conn)
+                return n_created
             except TakuanDBException:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -175,18 +177,34 @@ class SampleIngestionHandler(BaseIngestionHandler):
         """
         return mapping and mapping not in df
 
-    def load_dataframe(self, data: bytes, mapper: GeneExpressionMapper | None):
+    def load_dataframe(
+        self,
+        data: bytes,
+        file_type: Literal["csv", "tsv"],
+        mapper: GeneExpressionMapper | None,
+    ):
         buffer = StringIO(data.decode("utf-8"))
         buffer.seek(0)
         try:
-            # sep=None to infer separator (handle CSV and TSV)
-            df = pd.read_csv(
+            # Configure kwargs for TSV/CSV handling of the data in Pandas.read_csv
+            read_csv_kwargs: dict = {}
+            if file_type == "tsv":
+                # TSV whitespace separator
+                read_csv_kwargs = dict(sep="\\s+")
+
+            self.logger.info(f"Using Pandas.read_csv to parse data with: {read_csv_kwargs}")
+            df: pd.DataFrame = pd.read_csv(
                 buffer,
                 header=0,
-                sep=None,
                 skipinitialspace=True,
-                engine="python",  # C engine cannot infer if data is CSV or TSV
+                **read_csv_kwargs,
             )
+            if df.empty:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Provided data could not be parsed as {file_type.upper()} format into a data frame."
+                    + " Verify that the delimiters in the data are correct and that you specified the right file_type body param",
+                )
 
             # Validating for unique feature IDs
             self._check_index_duplicates(df.index)

@@ -8,7 +8,7 @@ from transcriptomics_data_service.config import get_config
 from httpx._types import HeaderTypes
 
 from transcriptomics_data_service.logger import get_logger
-from transcriptomics_data_service.models import ExpressionQueryBody, NormalizationMethodEnum
+from transcriptomics_data_service.models import ExperimentResult, ExpressionQueryBody, NormalizationMethodEnum
 
 
 config = get_config()
@@ -105,7 +105,8 @@ def test_normalize_403(test_client: TestClient, authz_headers_bad, db_cleanup, d
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_normalize_tpm(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
+# Temp commented to speed local tests
+def test_normalize(test_client: TestClient, authz_headers, db_cleanup, db_with_experiment):
     response = _ingest_file(
         test_client,
         file_path=RCM_FILE_PATH,
@@ -140,6 +141,7 @@ def test_ingest_single_sample(test_client: TestClient, authz_headers, db_cleanup
             tmm_count_col="tmm",
             getmm_count_col="getmm",
             fpkm_count_col="fpkm",
+            file_type="csv",
         ),
     )
     assert response.status_code == status.HTTP_200_OK
@@ -155,6 +157,7 @@ def test_ingest_single_sample_bad_mapping(test_client: TestClient, authz_headers
             "sample_id": "my-sample-id",
             "feature_col": "feature",
             "raw_count_col": "bad_count_MISSING",
+            "file_type": "csv",
         },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -189,6 +192,7 @@ def test_ingest_mixed_samples(test_client: TestClient, authz_headers, db_cleanup
             "raw_count_col": "expected_count",
             "tpm_count_col": "TPM",
             "fpkm_count_col": "FPKM",
+            "file_type": "tsv",
         },
     )
     assert r1.status_code == status.HTTP_200_OK
@@ -256,3 +260,86 @@ def test_ingest_mixed_samples(test_client: TestClient, authz_headers, db_cleanup
         query=ExpressionQueryBody(method="fpkm", sample_ids=[SAMPLE_ID_1]),
         expected_count=4,
     )
+
+
+def test_ingest_mixed_samples_strings(
+    test_client: TestClient, authz_headers, db_cleanup, db_with_experiment: ExperimentResult
+):
+    exp_id = db_with_experiment.experiment_result_id
+
+    def _assert_counts(exp_count: int):
+        exp_status = status.HTTP_200_OK
+        if exp_count == 0:
+            exp_count = None
+            exp_status = status.HTTP_404_NOT_FOUND
+        for method in ["raw", "tpm", "fpkm"]:
+            _assert_expression_count(
+                test_client,
+                authz_headers,
+                query=ExpressionQueryBody(method=method),
+                expected_count=exp_count,
+                expected_status=exp_status,
+            )
+
+    _assert_counts(0)
+
+    # Sample 1 malformed: \\t and \\n instead of \t and \n
+    s1_id = "SAMPLE_1"
+    s1_malformed_string = "gene_id\\tcounts\\tlength\\ttpm\\tfpkm\\nENSG00000000003.14\\t150.00\\t2000.22\\t6.24\\t7.32\\t\\nENSG00000000005\\t250.00\\t2020.22\\t2.24\\t2.32"
+    s1_malformed_data = bytes(
+        s1_malformed_string,
+        "utf-8",
+    )
+    s1_body = {
+        "sample_id": s1_id,
+        "feature_col": "gene_id",
+        "raw_count_col": "counts",
+        "tpm_count_col": "tpm",
+        "fpkm_count_col": "fpkm",
+    }
+    r_s1_ingest = test_client.post(
+        f"/experiment/{exp_id}/ingest/single", headers=authz_headers, files={"data": s1_malformed_data}, data=s1_body
+    )
+    assert r_s1_ingest.status_code == status.HTTP_400_BAD_REQUEST
+    _assert_counts(0)
+
+    # Sample 1 corrected, but wrongly ingested as CSV
+    s1_corrected_string = s1_malformed_string.replace("\\t", "\t").replace("\\n", "\n")
+    s1_corrected_data = bytes(s1_corrected_string, "utf-8")
+    s1_body_wrong_type = {"file_type": "csv", **s1_body}
+    r_s1_ingest = test_client.post(
+        f"/experiment/{exp_id}/ingest/single",
+        headers=authz_headers,
+        files={"data": s1_corrected_data},
+        data=s1_body_wrong_type,
+    )
+    assert r_s1_ingest.status_code == status.HTTP_400_BAD_REQUEST
+
+    # Sample 1 corrected, but ingested as TSV (default)
+    r_s1_ingest = test_client.post(
+        f"/experiment/{exp_id}/ingest/single", headers=authz_headers, files={"data": s1_corrected_data}, data=s1_body
+    )
+    assert r_s1_ingest.status_code == status.HTTP_200_OK
+    _assert_counts(2)
+
+    # Sample 2 correct and ingest right away
+    s2_id = "SAMPLE_2"
+    s2_malformed_string = "gene_id\\tcounts\\tlength\\ttpm\\tfpkm\\nENSG00000000003.14\\t150.00\\t2000.22\\t6.24\\t7.32\\t\\nENSG00000000005\\t250.00\\t2020.22\\t2.24\\t2.32"
+    s2_string = s2_malformed_string.replace("\\t", "\t").replace("\\n", "\n")
+    s2_data = bytes(
+        s2_string,
+        "utf-8",
+    )
+    s2_body = {
+        "sample_id": s2_id,
+        "feature_col": "gene_id",
+        "raw_count_col": "counts",
+        "tpm_count_col": "tpm",
+        "fpkm_count_col": "fpkm",
+        "file_type": "tsv",
+    }
+    r_s2_ingest = test_client.post(
+        f"/experiment/{exp_id}/ingest/single", headers=authz_headers, files={"data": s2_data}, data=s2_body
+    )
+    assert r_s2_ingest.status_code == status.HTTP_200_OK
+    _assert_counts(4)

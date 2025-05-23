@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from asyncpg import UniqueViolationError
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Path
 
 from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
@@ -164,14 +164,20 @@ async def delete_experiment_result(db: DatabaseDependency, experiment_result_id:
     status_code=status.HTTP_200_OK,
     # Injects the plugin authz middleware dep_authorize_ingest function
     dependencies=authz_plugin.dep_authz_ingest(),
-    description="Ingest detailed counts for a single sample TSV file",
+    # description="Ingest detailed counts for a single sample TSV or CSV file.",
+    summary="Ingest detailed counts for a single sample TSV or CSV file.",
+    description="Use this endpoint to ingest raw counts and/or pre-normalized gene expressions at the same time.",
 )
 async def ingest_single(
     db: DatabaseDependency,
     logger: LoggerDependency,
-    experiment_result_id: str,
-    data: Annotated[bytes, File()],
+    experiment_result_id: Annotated[str, Path(description="ID of an existing `ExperimentResult` to ingest into")],
+    data: Annotated[bytes, File(description="TSV/CSV file bytes")],
     sample_id: Annotated[str, Form(description="Sample unique identifier")],
+    file_type: Annotated[
+        Literal["csv", "tsv"],
+        Form(description="Specify file format for parsing, 'tsv' by default if not specified"),
+    ] = "tsv",
     feature_col: Annotated[str, Form(description="Feature column mapper, defaults to 'gene_id'")] = "gene_id",
     raw_count_col: Annotated[str | None, Form(description="Raw count column mapper")] = "",
     tpm_count_col: Annotated[str | None, Form(description="TPM count column mapper")] = "",
@@ -182,11 +188,6 @@ async def ingest_single(
     """
     Ingests data for a single sample in an ExperimentResult.
     The sample_id must be provided in the request.
-    Expected columns structure:
-        - gene_id: String feature identifier
-        - abundance: Number representing a normalised count
-        - counts: Number expressing the feature count
-        - countsFromAbundance: String ('yes' or 'no') Ignored at the moment.
     """
     # Reading and converting uploaded RCM file to DataFrame
     handler = SampleIngestionHandler(experiment_result_id, sample_id, db, logger)
@@ -201,10 +202,11 @@ async def ingest_single(
         getmm_count_col=getmm_count_col,
         fpkm_count_col=fpkm_count_col,
     )
-    handler.load_dataframe(data, data_mapper)
-    await handler.ingest()
-
-    return {"message": "Ingestion completed successfully"}
+    handler.load_dataframe(data, file_type, data_mapper)
+    n_created = await handler.ingest()
+    if not n_created:
+        return {"message": "Completed with no errors but no new GeneExpression could be created, inspect input data."}
+    return {"message": f"Ingested {n_created} GeneExpressions successfully"}
 
 
 @experiment_router.post(

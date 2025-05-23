@@ -80,6 +80,7 @@ r_csv_data = requests.post(
     files={"data": csv_file_data},
     data={
         "sample_id": csv_sample_id,
+        "file_type": "csv",
         # mapper defaults
         # "feature_col": "gene_id",
         # "raw_count_col": "counts"
@@ -96,6 +97,7 @@ r_csv_data = requests.post(
         # column mappings
         "feature_col": "feature",
         "raw_count_col": "count",
+        "file_type": "csv",
     },
 )
 print(f"Ingest status code, correct mappings (CSV file bytes): {r_csv_data.status_code}")
@@ -121,6 +123,7 @@ r_multi_norm = requests.post(
         "tpm_count_col": "tpm",
         "fpkm_count_col": "fpkm",
         "getmm_count_col": "getmm",
+        "file_type": "csv",
     },
 )
 print(f"Status for multiple normalised values ingestion: {r_multi_norm.status_code}")
@@ -128,3 +131,42 @@ print(f"Status for multiple normalised values ingestion: {r_multi_norm.status_co
 r_query = requests.post(f"{TAKUAN_ENDPOINT}/expressions", json={"sample_ids": [MULTI_NORM_SAMPLE_ID], "method": "fpkm"})
 print("Get expressions values from the /expressions endpoint")
 print(json.dumps(r_query.json(), indent=2))
+
+
+########################### Mixed samples encoded string ingestions ###########################
+s1_id = "SAMPLE_1"
+
+# With TSV files incoming data must include real tab (\t) and newline (\n) delimiters, not their escaped form (\\t and \\n).
+s1_malformed_string = "gene_id\\tcounts\\tlength\\ttpm\\tfpkm\\nENSG00000000003.14\\t150.00\\t2000.22\\t6.24\\t7.32\\t\\nENSG00000000005\\t250.00\\t2020.22\\t2.24\\t2.32"
+s1_malformed_data = bytes(s1_malformed_string, "utf-8")
+r_malformed_ingest = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": s1_malformed_data},
+    data={
+        "sample_id": s1_id,
+        "feature_col": "gene_id",
+        "raw_count_col": "counts",
+        "tpm_count_col": "tpm",
+        "fpkm_count_col": "fpkm",
+    },
+)
+assert r_malformed_ingest.status_code == 400
+print(f"Ingested a malformed TSV file:\n \t{r_malformed_ingest.json()['detail']}")
+
+s1_corrected_string = s1_malformed_string.replace(
+    "\\t",
+    "\t",
+).replace("\\n", "\n")
+s1_data = bytes(s1_corrected_string, "utf-8")
+r_s1_ingest = requests.post(
+    f"{TAKUAN_ENDPOINT}/experiment/{MY_EXPERIMENT_ID}/ingest/single",
+    files={"data": s1_data},
+    data={
+        "sample_id": s1_id,
+        "feature_col": "gene_id",
+        "raw_count_col": "counts",
+        "tpm_count_col": "tpm",
+        "fpkm_count_col": "fpkm",
+    },
+)
+print(r_s1_ingest.json()["message"])

@@ -200,7 +200,7 @@ class Database(PgAsyncDatabase):
     ########################
     async def create_or_update_gene_expressions(
         self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection
-    ):
+    ) -> int:
         """
         Creates rows on gene_expression as part of an Atomic transaction
         Rows on gene_expressions can only be created as part of an RCM ingestion.
@@ -239,6 +239,7 @@ class Database(PgAsyncDatabase):
             self.logger.error(e)
             raise TakuanDBException("Failed to insert gene expression records.")
         self.logger.info(f"Inserted {len(records)} gene expression records.")
+        return len(records)
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
