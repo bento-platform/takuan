@@ -17,15 +17,41 @@ Takuan handles data produced in transcriptomics experiments.
 
 For a given experiment, samples taken from study participants are selected for RNA sequencing.
 
-At the end of an RNA sequencing pipeline, a raw counts matrix (RCM) is usually produced, this matrix 
-is used to represent the gene expression levels per samples.
+At the end of an RNA sequencing pipeline, results are usually stored in TSV/CSV format, Takuan handles 2 result formats:
+- Multi-sample Raw Count Matrices (RCM)
+  - Defines the expression levels for each feature (gene) and sample pair
+  - Can only ingest one count type at a time (raw, TPM, TMM, GETMM or FPKM)
+- Single-sample detailled counts
+  - Defines the expression levels for each feature (gene) for the given sample
+  - Can ingest all count types at once (raw, TPM, TMM, GETMM and FPKM)
 
-To express this in a tabular format, Takuan expects to receive RCM files in CSV format, where the colums correspond 
-to unique sample identifiers, rows to unique feature identifiers (genes) and cells to the observed count for the sample-gene pair.
+Once the data is produced, it can be ingested in Takuan in order to allow downstream analysis of the results.
+
+## Multi-sample matrices (RCM)
+
+Takuan expects to receive RCM files in CSV format, where the colums correspond to unique sample identifiers, 
+rows to unique feature identifiers (genes) and cells to the observed count for the sample-gene pair.
 
 ![RCM overview](./docs/raw_counts_matrix.png)
 
-Once the data is produced, it can be ingested in Takuan in order to allow downstream analysis of the results.
+## Single-sample detailled documents
+
+Takuan expects to receive RCM files in CSV or TSV format, where the columns correspond to specific expression measures, 
+and the rows to feature IDs (genes). 
+
+For example:
+```
+gene_id           raw_count   tpm_count   tmm_count   getmm    fpkm_count
+ENSG00000000003   0           0           0           0        0
+ENSG00000000005   1559        2.3567      0.2369      7.566    0.369
+...
+```
+
+With single-sample data files, you can save time by ingesting the raw counts and the pre-normalised values at the same 
+time. 
+
+The single-sample endpoint even supports column headers mappings, allowing you to flexibly ingest files that don't
+share header names.
 
 ## Data model and flow
 
@@ -43,14 +69,19 @@ In order to ingest and query data into Takuan, you must follow these steps:
       1. Where `experiment_result_id` must correspond to an existing experiment ID in Takuan
       2. A valid RCM file must be in the request's body as `rcm_file`
    2. During the ingestion, Takuan creates a `gene_expression` row for every pair of sample-gene
-3. The `gene_expression` table now contains rows with the `raw_count` column filled
-4. Normalized counts can be computed on demand and stored in the database
+3. OR ingest single-sample data
+   1. POST `/experiment/{experiment_result_id}/ingest/single`
+      1. Where `experiment_result_id` must correspond to an existing experiment ID in Takuan
+      2. A valid TSV/CSV file in the request body as `data`
+   2. During the ingestion, Takuan creates a `gene_expression` row for every expression row in the file
+4. The `gene_expression` table now contains rows with the `raw_count` column filled
+5. (Optional) Normalized counts can be computed on demand and stored in the database
    1. POST `/normalize/{experiment_result_id}/{method}`
       1. `experiment_result_id` is the ID of an experiment with raw gene expressions
       2. `method` is the normalization method to use (TPM, TMM or GETMM)
       3. `TPM` and `GETMM` both **require** that you include a `gene_lengths` CSV file in the body
    2. Normalized values are added in the appropriate column of `gene_expression`
-5. Query the experiments and gene expressions in your DB!
+6. Query the experiments and gene expressions in your DB!
    1. POST `/expressions` to get expression data results
       1. JSON request body for filtering results and pagination
    2. POST `experiment/{experiment_result_id}/samples` to get the sample IDs for an experiment
@@ -173,22 +204,24 @@ If the file exists, it will be served from the `GET /service-info` endpoint, oth
 
 The service exposes the following endpoints:
 
-| Endpoint                                      | Method | Description                                                                                    |
-| --------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| `/experiment`                                 | GET    | Get all experiments                                                                            |
-| `/experiment`                                 | POST   | Create an experiment                                                                           |
-| `/experiment/{experiment_result_id}`          | GET    | Get an experiment by unique ID                                                                 |
-| `/experiment/{experiment_result_id}`          | DELETE | Delete an experiment by unique ID                                                              |
-| `/experiment/{experiment_result_id}/samples`  | POST   | Retrieve the samples for a given experiment                                                    |
-| `/experiment/{experiment_result_id}/features` | POST   | Retrieve the features for a given experiment                                                   |
-| `/experiment/{experiment_result_id}/ingest`   | POST   | Ingest transcriptomics data into an experiment                                                 |
-| `/normalize/{experiment_result_id}/{method}`  | POST   | Normalize an experiment's gene expressions with one of the supported methods (TPM, TMM, GETMM) |
-| `/expressions`                                | POST   | Retrieve expressions with filter parameters                                                    |
-| `/service-info`                               | GET    | Returns a GA4GH service-info object describing the service                                     |
+| Endpoint                                           | Method | Description                                                                                    |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `/experiment`                                      | GET    | Get all experiments                                                                            |
+| `/experiment`                                      | POST   | Create an experiment                                                                           |
+| `/experiment/{experiment_result_id}`               | GET    | Get an experiment by unique ID                                                                 |
+| `/experiment/{experiment_result_id}`               | DELETE | Delete an experiment by unique ID                                                              |
+| `/experiment/{experiment_result_id}/samples`       | POST   | Retrieve the samples for a given experiment                                                    |
+| `/experiment/{experiment_result_id}/features`      | POST   | Retrieve the features for a given experiment                                                   |
+| `/experiment/{experiment_result_id}/ingest`        | POST   | Ingest multi-sample transcriptomics data into an experiment                                    |
+| `/experiment/{experiment_result_id}/ingest/single` | POST   | Ingest single-sample transcriptomics data into an experiment                                   |
+| `/normalize/{experiment_result_id}/{method}`       | POST   | Normalize an experiment's gene expressions with one of the supported methods (TPM, TMM, GETMM) |
+| `/expressions`                                     | POST   | Retrieve expressions with filter parameters                                                    |
+| `/service-info`                                    | GET    | Returns a GA4GH service-info object describing the service                                     |
 
 
 <!-- TODO: Deploy a Swagger UI pointing to the latest release once we have one. -->
 **Note:** For a more thorough API documentation, please refer to the OpenAPI release artifacts (openapi.json), or consult the hosted docs (link to come).
+An `openapi.json` file is produced and attached to every release.
 
 ## Mount points
 
