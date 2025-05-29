@@ -39,7 +39,6 @@ async def lifespan(_app: FastAPI):
     await db.close()
 
 
-
 app = FastAPI(
     title=config_for_setup.service_name,
     root_path=urlparse(config_for_setup.service_url_base_path).path,

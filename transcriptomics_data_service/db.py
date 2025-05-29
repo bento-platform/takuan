@@ -27,7 +27,7 @@ SCHEMA_PATH = SQL_PATH / "schema.sql"
 
 # Migrations to apply, in order
 MIGRATIONS = [
-    SQL_PATH / "migrate_v1_0_0.sql" # from v1.0.0-rc
+    SQL_PATH / "migrate_v1_0_0.sql"  # from v1.0.0-rc
 ]
 
 DEFAULT_PAGINATION: PaginatedRequest = PaginatedRequest(page=1, page_size=100)
@@ -58,7 +58,6 @@ class Database(PgAsyncDatabase):
                     raise
             self.logger.info("Applied all migrations.")
 
-                    
     async def _execute(self, *args):
         conn: asyncpg.Connection
         async with self.connect() as conn:
