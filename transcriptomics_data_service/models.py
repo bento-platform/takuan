@@ -22,12 +22,14 @@ TPM = "tpm"
 TMM = "tmm"
 GETMM = "getmm"
 RAW = "raw"
+FPKM = "fpkm"
 
 
 class NormalizationMethodEnum(str, Enum):
     tpm = TPM
     tmm = TMM
     getmm = GETMM
+    fpkm = FPKM
 
 
 class CountTypesEnum(str, Enum):
@@ -36,6 +38,7 @@ class CountTypesEnum(str, Enum):
     tpm = TPM
     tmm = TMM
     getmm = GETMM
+    fpkm = FPKM
 
 
 #####################################
@@ -76,32 +79,46 @@ class GeneExpression(BaseModel):
     gene_code: str = Field(..., min_length=1, max_length=255, description="Feature identifier")
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample identifier")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="ExperimentResult identifier")
-    raw_count: int = Field(..., ge=0, description="The raw count for the given feature")
-    tpm_count: float | None = Field(None, ge=0, description="TPM normalized count")
-    tmm_count: float | None = Field(None, ge=0, description="TMM normalized count")
-    getmm_count: float | None = Field(None, ge=0, description="GETMM normalized count")
+    raw_count: float | None = Field(None, description="The raw count for the given feature")
+    tpm_count: float | None = Field(None, description="TPM normalized count")
+    tmm_count: float | None = Field(None, description="TMM normalized count")
+    getmm_count: float | None = Field(None, description="GETMM normalized count")
+    fpkm_count: float | None = Field(None, description="FPKM normalized count")
 
 
 class GeneExpressionData(BaseModel):
     gene_code: str = Field(..., min_length=1, max_length=255, description="Gene code")
     sample_id: str = Field(..., min_length=1, max_length=255, description="Sample ID")
     experiment_result_id: str = Field(..., min_length=1, max_length=255, description="Experiment result ID")
-    count: float = Field(..., description="Expression count")
+    count: float | None = Field(None, description="Expression count")
 
 
 class ExpressionQueryBody(PaginatedRequest):
     genes: List[str] | None = Field(None, description="List of gene codes to retrieve")
     experiments: List[str] | None = Field(None, description="List of experiment result IDs to retrieve data from")
     sample_ids: List[str] | None = Field(None, description="List of sample IDs to retrieve data from")
-    method: CountTypesEnum = Field(
-        CountTypesEnum.raw,
-        description="Data method to retrieve: 'raw', 'tpm', 'tmm', 'getmm'",
+    method: CountTypesEnum | None = Field(
+        None,
+        description=f"Data method to retrieve: {', '.join([c.value for c in CountTypesEnum])}",
     )
 
 
 class GeneExpressionResponse(PaginatedResponse):
     query: ExpressionQueryBody = Field(..., description="The query that produced this response")
-    expressions: List[GeneExpressionData] = Field(..., description="List of gene expressions")
+    expressions: List[GeneExpression] | List[GeneExpressionData] = Field(..., description="List of gene expressions")
+
+
+class GeneExpressionMapper(BaseModel):
+    """
+    Mapping class for flexible handling of CSV/TSV files with different columns.
+    """
+
+    feature_col: str
+    raw_count_col: str | None = None
+    tpm_count_col: str | None = None
+    tmm_count_col: str | None = None
+    getmm_count_col: str | None = None
+    fpkm_count_col: str | None = None
 
 
 #####################################

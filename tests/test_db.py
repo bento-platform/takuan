@@ -55,7 +55,7 @@ async def test_delete_experiment_result(db: Database, db_cleanup):
 async def test_gene_expression(db: Database, db_cleanup):
     async with db.transaction_connection() as conn:
         await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)
-        await db.create_gene_expressions([TEST_GENE_EXPRESSION], conn)
+        await db.create_or_update_gene_expressions([TEST_GENE_EXPRESSION], conn)
 
     # read all
     db_expressions, total_records = await db.fetch_gene_expressions()
@@ -73,7 +73,7 @@ async def test_transaction(db: Database, db_cleanup):
     async with db.transaction_connection() as conn:
         try:
             await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)
-            await db.create_gene_expressions([TEST_GENE_EXPRESSION, TEST_GENE_EXPRESSION], conn)
+            await db.create_experiment_result(TEST_EXPERIMENT_RESULT, conn)  # trigger a duplicate key db exception
             assert False
         except Exception:
             assert True

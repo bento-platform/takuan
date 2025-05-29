@@ -4,6 +4,8 @@ from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
 from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
+    CountTypesEnum,
+    GeneExpression,
     GeneExpressionData,
     GeneExpressionResponse,
     ExpressionQueryBody,
@@ -11,11 +13,16 @@ from transcriptomics_data_service.models import (
 
 expressions_router = APIRouter(prefix="/expressions", dependencies=authz_plugin.dep_expression_router())
 
+DEFAULT_EXPRESSIONS_QUERY = ExpressionQueryBody(
+    page=1, page_size=100, method="raw", experiments=[], sample_ids=[], genes=[]
+)
+
 
 async def get_expressions_handler(
     query_body: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
+    mapping: GeneExpression | GeneExpressionData,
 ):
     """
     Handler for fetching and returning gene expression data.
@@ -28,7 +35,7 @@ async def get_expressions_handler(
         sample_ids=query_body.sample_ids,
         method=query_body.method,
         pagination=query_body,  # ExpressionQueryBody extends the PaginatedRequest model
-        mapping=GeneExpressionData,
+        mapping=mapping,
     )
 
     if not expressions:
@@ -58,22 +65,24 @@ async def get_expressions_handler(
     dependencies=authz_plugin.dep_authz_expressions_list(),
 )
 async def get_expressions_post(
-    params: ExpressionQueryBody,
     db: DatabaseDependency,
     logger: LoggerDependency,
+    params: ExpressionQueryBody = DEFAULT_EXPRESSIONS_QUERY,
+    full: bool = False,
 ):
     """
-    Retrieve gene expression data via POST request.
-    Using POST instead of GET in order to add a body of type ExpressionQueryBody
-
-    Example JSON body:
-    {
-        "genes": ["gene1", "gene2"],
-        "experiments": ["exp1"],
-        "sample_ids": ["sample1"],
-        "method": "tmm",
-        "page": 1,
-        "page_size": 100
-    }
+    Retrieve gene expression data via POST request.\n
+    Filter the items by genes, experiments, samples and count methods with a body of type `ExpressionQueryBody`.\n
+    The `ExpressionQueryBody.method` helps filtering results by count method: \n
+    - If NOT provided, returns all expressions for the query
+    - If provided, only returns expressions for which this count is NOT NULL.\n
+    To include all counts in the response, use the `full` query parameter.\n
+    If `full` is false or unset and no `ExpressionQueryBody.method` is provided, `raw` counts will be used by default.\n
     """
-    return await get_expressions_handler(params, db, logger)
+    if full:
+        mapping = GeneExpression
+    else:
+        mapping = GeneExpressionData
+        if not params.method:
+            params.method = CountTypesEnum.raw
+    return await get_expressions_handler(params, db, logger, mapping)

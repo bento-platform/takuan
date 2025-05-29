@@ -4,6 +4,7 @@ from io import StringIO
 
 from transcriptomics_data_service.authz.plugin import authz_plugin
 from transcriptomics_data_service.db import DatabaseDependency
+from transcriptomics_data_service.logger import LoggerDependency
 from transcriptomics_data_service.models import (
     CountTypesEnum,
     GeneExpression,
@@ -29,6 +30,7 @@ normalization_router = APIRouter(prefix="/normalize")
 )
 async def normalize(
     db: DatabaseDependency,
+    logger: LoggerDependency,
     experiment_result_id: str,
     method: NormalizationMethodEnum,
     gene_lengths_file: UploadFile = File(None),
@@ -60,6 +62,14 @@ async def normalize(
     elif method is NormalizationMethodEnum.getmm:
         raw_counts_df, gene_lengths_series = _align_gene_lengths(raw_counts_df, gene_lengths)
         normalized_df = getmm_normalization(raw_counts_df, gene_lengths_series)
+    elif method is NormalizationMethodEnum.fpkm:
+        err_msg = "FPKM normalization is not implemented yet, you can ingest FPKM normalised data instead."
+        logger.warning(err_msg)
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=err_msg)
+    else:
+        err_msg = f"Normalization method '{method}' is not supported"
+        logger.warning(err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
     # Update database with normalized values
     await _update_normalized_values(db, normalized_df, experiment_result_id, method)

@@ -4,7 +4,7 @@ import pytest
 from tests.test_db import TEST_EXPERIMENT_RESULT
 from transcriptomics_data_service.config import get_config
 from transcriptomics_data_service.logger import get_logger
-from transcriptomics_data_service.models import ExperimentResult
+from transcriptomics_data_service.models import ExperimentResult, GeneExpression
 
 config = get_config()
 logger = get_logger(config)
@@ -40,7 +40,7 @@ def test_create_experiment_duplicate_500(exp, test_client, authz_headers, db_cle
         headers=authz_headers,
         data=exp.model_dump_json(),
     )
-    assert response_dup.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response_dup.status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
@@ -80,3 +80,45 @@ def test_delete_experiment_200(test_client, authz_headers):
     # Missing api-key
     response = test_client.delete("/experiment/non-existant", headers=authz_headers)
     assert response.status_code == status.HTTP_200_OK
+
+
+###### /experiment/{ID}/samples
+def test_experiment_samples_not_found(test_client, authz_headers, db_with_experiment, db_cleanup):
+    response = test_client.post(
+        f"/experiment/{TEST_EXPERIMENT_RESULT.experiment_result_id}/samples",
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_experiment_samples(test_client, authz_headers, db_with_full_expression: GeneExpression, db_cleanup):
+    exp_id = db_with_full_expression.experiment_result_id
+    sample_id = db_with_full_expression.sample_id
+    response = test_client.post(
+        f"/experiment/{exp_id}/samples",
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert sample_id in body["samples"]
+
+
+###### /experiment/{ID}/features
+def test_experiment_features_not_found(test_client, authz_headers, db_with_experiment, db_cleanup):
+    response = test_client.post(
+        f"/experiment/{TEST_EXPERIMENT_RESULT.experiment_result_id}/features",
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_experiment_features(test_client, authz_headers, db_with_full_expression: GeneExpression, db_cleanup):
+    exp_id = db_with_full_expression.experiment_result_id
+    feature_id = db_with_full_expression.gene_code
+    response = test_client.post(
+        f"/experiment/{exp_id}/features",
+        headers=authz_headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert feature_id in body["features"]

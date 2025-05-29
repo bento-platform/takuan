@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Annotated, AsyncIterator, List, Tuple
+import aiofiles
 import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
@@ -10,6 +11,7 @@ from pathlib import Path
 
 
 from .config import Config, ConfigDependency
+from .exceptions import TakuanDBException
 from .logger import LoggerDependency
 from .models import (
     CountTypesEnum,
@@ -20,7 +22,13 @@ from .models import (
     PaginatedRequest,
 )
 
-SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
+SQL_PATH = Path(__file__).parent / "sql"
+SCHEMA_PATH = SQL_PATH / "schema.sql"
+
+# Migrations to apply, in order
+MIGRATIONS = [
+    SQL_PATH / "migrate_v1_0_0.sql"  # from v1.0.0-rc
+]
 
 DEFAULT_PAGINATION: PaginatedRequest = PaginatedRequest(page=1, page_size=100)
 
@@ -34,6 +42,21 @@ class Database(PgAsyncDatabase):
         self._config = config
         self.logger = logger
         super().__init__(get_db_uri(config), SCHEMA_PATH)
+
+    async def migrate(self):
+        self.logger.info("Checking if DB migrations are needed.")
+        if MIGRATIONS:
+            self.logger.info("Migrations found, applying in a transaction.")
+            async with self.transaction_connection() as conn:
+                try:
+                    for migration_file_path in MIGRATIONS:
+                        async with aiofiles.open(migration_file_path, "r") as mf:
+                            await conn.execute(await mf.read())
+                            self.logger.info(f"Applied migration file: {migration_file_path.name}")
+                except Exception as e:
+                    self.logger.error("Migrations could not be applied due to an exception.", e)
+                    raise
+            self.logger.info("Applied all migrations.")
 
     async def _execute(self, *args):
         conn: asyncpg.Connection
@@ -197,7 +220,9 @@ class Database(PgAsyncDatabase):
     ########################
     # CRUD: gene_expressions
     ########################
-    async def create_gene_expressions(self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection):
+    async def create_or_update_gene_expressions(
+        self, expressions: list[GeneExpression], transaction_conn: asyncpg.Connection
+    ) -> int:
         """
         Creates rows on gene_expression as part of an Atomic transaction
         Rows on gene_expressions can only be created as part of an RCM ingestion.
@@ -213,18 +238,30 @@ class Database(PgAsyncDatabase):
                 expr.tpm_count,
                 expr.tmm_count,
                 expr.getmm_count,
+                expr.fpkm_count,
             )
             for expr in expressions
         ]
 
         query = """
-        INSERT INTO gene_expressions (
-            gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        """
-
-        await transaction_conn.executemany(query, records)
+            INSERT INTO gene_expressions as ge (
+                gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count, fpkm_count
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (gene_code, sample_id, experiment_result_id)
+            DO UPDATE SET
+                raw_count = COALESCE(EXCLUDED.raw_count, ge.raw_count),
+                tpm_count = COALESCE(EXCLUDED.tpm_count, ge.tpm_count),
+                tmm_count = COALESCE(EXCLUDED.tmm_count, ge.tmm_count),
+                getmm_count = COALESCE(EXCLUDED.getmm_count, ge.getmm_count),
+                fpkm_count = COALESCE(EXCLUDED.fpkm_count, ge.fpkm_count)
+            """
+        try:
+            await transaction_conn.executemany(query, records)
+        except asyncpg.PostgresError as e:
+            self.logger.error(e)
+            raise TakuanDBException("Failed to insert gene expression records.")
         self.logger.info(f"Inserted {len(records)} gene expression records.")
+        return len(records)
 
     async def _select_expressions(self, exp_id: str | None) -> AsyncIterator[GeneExpression]:
         conn: asyncpg.Connection
@@ -240,10 +277,11 @@ class Database(PgAsyncDatabase):
             gene_code=rec["gene_code"],
             sample_id=rec["sample_id"],
             experiment_result_id=rec["experiment_result_id"],
-            raw_count=rec["raw_count"],
-            tpm_count=rec["tpm_count"],
-            tmm_count=rec["tmm_count"],
-            getmm_count=rec["getmm_count"],
+            raw_count=rec["raw_count"] if rec["raw_count"] else None,
+            tpm_count=rec["tpm_count"] if rec["tpm_count"] else None,
+            tmm_count=rec["tmm_count"] if rec["tmm_count"] else None,
+            getmm_count=rec["getmm_count"] if rec["getmm_count"] else None,
+            fpkm_count=rec["fpkm_count"] if rec["fpkm_count"] else None,
         )
 
     ############################
@@ -313,7 +351,7 @@ class Database(PgAsyncDatabase):
         genes: List[str] | None = None,
         experiments: List[str] | None = None,
         sample_ids: List[str] | None = None,
-        method: CountTypesEnum = CountTypesEnum.raw,
+        method: CountTypesEnum | None = None,
         pagination: PaginatedRequest | None = None,
         mapping: GeneExpression | GeneExpressionData = GeneExpression,
     ) -> Tuple[List[GeneExpression] | List[GeneExpressionData], int]:
@@ -325,7 +363,7 @@ class Database(PgAsyncDatabase):
         async with self.connect() as conn:
             # Query builder
             base_query = """
-                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count
+                SELECT gene_code, sample_id, experiment_result_id, raw_count, tpm_count, tmm_count, getmm_count, fpkm_count
                 FROM gene_expressions
                 """
             count_query = "SELECT COUNT(*) FROM gene_expressions"
@@ -348,7 +386,8 @@ class Database(PgAsyncDatabase):
                 params.append(sample_ids)
                 param_counter += 1
 
-            if method.value != "raw":
+            # Only get rows where the chosen method count is not null
+            if method and method.value:
                 conditions.append(f"{method.value}_count IS NOT NULL")
 
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -371,7 +410,9 @@ class Database(PgAsyncDatabase):
             # For the /expressions endpoint
             # Returns a lightweight representation of a GeneExpression as GeneExpressionData,
             # which only contains the requested count type.
-            count_col = f"{method.value}_count"
+            count_col = "raw_count"
+            if method and method.value:
+                count_col = f"{method.value}_count"
             expressions = [
                 GeneExpressionData(
                     gene_code=record["gene_code"],
