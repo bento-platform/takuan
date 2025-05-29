@@ -27,6 +27,7 @@ async def get_test_db() -> AsyncGenerator[Database, None]:
     config = get_config()
     db = Database(config, get_logger(config))
     await db.initialize(pool_size=1)
+    await db.migrate()
     yield db
 
 
