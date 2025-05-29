@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Annotated, AsyncIterator, List, Tuple
+import aiofiles
 import asyncpg
 from bento_lib.db.pg_async import PgAsyncDatabase
 from contextlib import asynccontextmanager
@@ -21,7 +22,13 @@ from .models import (
     PaginatedRequest,
 )
 
-SCHEMA_PATH = Path(__file__).parent / "sql" / "schema.sql"
+SQL_PATH = Path(__file__).parent / "sql"
+SCHEMA_PATH = SQL_PATH / "schema.sql"
+
+# Migrations to apply, in order
+MIGRATIONS = [
+    SQL_PATH / "migrate_v1_0_0.sql" # from v1.0.0-rc
+]
 
 DEFAULT_PAGINATION: PaginatedRequest = PaginatedRequest(page=1, page_size=100)
 
@@ -36,6 +43,22 @@ class Database(PgAsyncDatabase):
         self.logger = logger
         super().__init__(get_db_uri(config), SCHEMA_PATH)
 
+    async def migrate(self):
+        self.logger.info("Checking if DB migrations are needed.")
+        if MIGRATIONS:
+            self.logger.info("Migrations found, applying in a transaction.")
+            async with self.transaction_connection() as conn:
+                try:
+                    for migration_file_path in MIGRATIONS:
+                        async with aiofiles.open(migration_file_path, "r") as mf:
+                            await conn.execute(await mf.read())
+                            self.logger.info(f"Applied migration file: {migration_file_path.name}")
+                except Exception as e:
+                    self.logger.error("Migrations could not be applied due to an exception.", e)
+                    raise
+            self.logger.info("Applied all migrations.")
+
+                    
     async def _execute(self, *args):
         conn: asyncpg.Connection
         async with self.connect() as conn:

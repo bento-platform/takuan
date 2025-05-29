@@ -32,10 +32,12 @@ logger_for_setup = get_logger(config_for_setup)
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     db = get_db(config_for_setup, logger_for_setup)
+    # await db.migrate()
+
+    yield
 
     await db.close()
 
-    yield
 
 
 app = FastAPI(
