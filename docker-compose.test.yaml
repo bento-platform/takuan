@@ -30,7 +30,7 @@ services:
       - takuan.container.kind=test
 
   tds-db:
-    image: postgres:16
+    image: postgres:18
     container_name: tds-db
     environment:
       - POSTGRES_USER=tds_user

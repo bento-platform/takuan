@@ -32,8 +32,8 @@ RUN apt-get update -y; \
     rm -rf /var/lib/apt/lists/*;
 
 RUN pip install --no-cache-dir -U pip; \
-    pip install --no-cache-dir poetry==1.8.5; \
-    pip install --no-cache-dir 'uvicorn[standard]>=0.34.0,<0.35'
+    pip install --no-cache-dir poetry==2.2.1; \
+    pip install --no-cache-dir 'uvicorn[standard]>=0.38.0,<0.39'
 
 # INIT DIRECTORIES
 RUN mkdir /tds /run/secrets
