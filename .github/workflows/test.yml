@@ -38,7 +38,7 @@ jobs:
         run: |
           docker exec ${{ job.services.postgres.id }} sh -c 'echo "max_connections=200" >> /var/lib/postgresql/18/docker/postgresql.conf'
           docker kill --signal=SIGHUP ${{ job.services.postgres.id }}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         name: Set up Python
         with:
@@ -56,7 +56,7 @@ jobs:
         run: |
           poetry run pytest -svv --cov=transcriptomics_data_service --cov-branch --cov-report xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}

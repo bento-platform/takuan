@@ -21,7 +21,7 @@ def test_create_experiment(exp, test_client, authz_headers, db_cleanup):
     response = test_client.post(
         "/experiment",
         headers=authz_headers,
-        data=exp.model_dump_json(),
+        json=exp.model_dump(mode="json"),
     )
     assert response.status_code == status.HTTP_200_OK
 
@@ -31,14 +31,14 @@ def test_create_experiment_duplicate_500(exp, test_client, authz_headers, db_cle
     response = test_client.post(
         "/experiment",
         headers=authz_headers,
-        data=exp.model_dump_json(),
+        json=exp.model_dump(mode="json"),
     )
     assert response.status_code == status.HTTP_200_OK
 
     response_dup = test_client.post(
         "/experiment",
         headers=authz_headers,
-        data=exp.model_dump_json(),
+        json=exp.model_dump(mode="json"),
     )
     assert response_dup.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -47,7 +47,7 @@ def test_create_experiment_403(test_client, authz_headers_bad, db_cleanup):
     response = test_client.post(
         "/experiment",
         headers=authz_headers_bad,
-        data=TEST_EXPERIMENT_RESULT.model_dump_json(),
+        json=TEST_EXPERIMENT_RESULT.model_dump(mode="json"),
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
 

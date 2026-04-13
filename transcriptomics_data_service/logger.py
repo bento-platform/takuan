@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 logging.basicConfig(level=logging.NOTSET)
+logging.getLogger("python_multipart.multipart").setLevel(logging.INFO)
 
 
 @lru_cache
