@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION=3.12
-ARG DEBIAN_VERSION=slim-bookworm
+ARG DEBIAN_VERSION=slim-trixie
 
 FROM python:${PYTHON_VERSION}-${DEBIAN_VERSION}
 
@@ -32,8 +32,8 @@ RUN apt-get update -y; \
     rm -rf /var/lib/apt/lists/*;
 
 RUN pip install --no-cache-dir -U pip; \
-    pip install --no-cache-dir poetry==2.2.1; \
-    pip install --no-cache-dir 'uvicorn[standard]>=0.38.0,<0.39'
+    pip install --no-cache-dir poetry==2.3.2 poetry-plugin-export==1.10.0; \
+    pip install --no-cache-dir 'uvicorn[standard]>=0.44.0,<0.45'
 
 # INIT DIRECTORIES
 RUN mkdir /tds /run/secrets
